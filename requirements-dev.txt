@@ -1,0 +1,50 @@
+# ===================================
+# Development Requirements
+# ===================================
+# Install with: pip install -r requirements-dev.txt
+
+# Include base requirements
+-r requirements.txt
+
+# ----- Testing -----
+pytest==8.3.5                  # Testing framework
+pytest-django==4.9.0           # Django integration for pytest
+pytest-cov==6.1.0              # Coverage plugin for pytest
+coverage==7.6.9                # Code coverage measurement
+factory-boy==3.3.1             # Test data generation
+faker==33.6.1                  # Fake data generation
+
+# ----- Code Quality & Linting -----
+black==25.0.0                  # Code formatter
+flake8==7.2.0                  # Style guide enforcement
+pylint==3.5.1                  # Code analysis
+pylint-django==2.6.1           # Django plugin for pylint
+isort==5.13.2                  # Import sorting
+autopep8==2.3.2                # PEP 8 auto-formatter
+
+# ----- Type Checking -----
+mypy==1.15.0                   # Static type checker
+django-stubs==5.2.0            # Type stubs for Django
+types-requests==2.32.3         # Type stubs for requests
+
+# ----- Debugging -----
+django-debug-toolbar==5.0.0    # Debug toolbar for Django
+ipython==9.2.1                 # Enhanced Python shell
+ipdb==0.13.13                  # IPython debugger
+django-extensions==3.2.3       # Django shell_plus and more
+
+# ----- Documentation -----
+Sphinx==8.2.2                  # Documentation generator
+sphinx-rtd-theme==3.0.4        # ReadTheDocs theme
+
+# ----- Performance Profiling -----
+django-silk==5.3.0             # Performance profiling
+memory-profiler==0.62.0        # Memory usage profiling
+
+# ----- Security -----
+bandit==1.9.0                  # Security linter
+safety==4.0.0                  # Dependency vulnerability scanner
+pip-audit==2.8.5               # Security auditing tool
+
+# ----- Pre-commit Hooks -----
+pre-commit==4.2.0              # Git pre-commit hook framework

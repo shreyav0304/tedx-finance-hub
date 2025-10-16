@@ -1,0 +1,594 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}All Transactions - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header with Actions -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="min-w-0">
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">All Transactions</h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-1">Click any cell to edit • Double-click to view details</p>
+        </div>
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+            <a href="{% url 'tedx_finance:export_xlsx' %}"
+               class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 w-full sm:w-auto"
+               title="Export all approved transactions to Excel">
+                📊 Export Excel
+            </a>
+            <a href="{% url 'tedx_finance:import_transactions' %}"
+               class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition w-full sm:w-auto text-center">
+                📥 Import from Excel
+            </a>
+            <button onclick="showNewTransactionModal()"
+                    class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition w-full sm:w-auto">
+                + New Transaction (N)
+            </button>
+            <a href="{% url 'tedx_finance:dashboard' %}"
+               class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition w-full sm:w-auto text-center">
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Filters & Search (collapsible on phones) -->
+    <div class="section-card mb-6">
+        <!-- Mobile toggle header -->
+        <div class="md:hidden -mt-1 -mb-1">
+            <button id="filtersToggle" class="w-full flex items-center justify-between px-2 py-2 text-left text-slate-800 dark:text-slate-200">
+                <span class="font-semibold">Filters</span>
+                <svg id="filtersChevron" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="filtersContent" class="hidden md:block">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div class="md:col-span-2">
+                <label class="block text-slate-700 dark:text-slate-300 text-sm font-semibold mb-2">Quick Search (/)</label>
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="Search transactions..." 
+                       class="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+            
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-slate-700 dark:text-slate-300 text-sm font-semibold mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="all">All Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+            
+            <!-- Category Filter -->
+            <div>
+                <label class="block text-slate-700 dark:text-slate-300 text-sm font-semibold mb-2">Category</label>
+                <select id="categoryFilter" class="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="all">All Categories</option>
+                    {% for value, label in categories %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4 pt-4 border-t border-slate-300 dark:border-slate-700">
+            <div class="text-slate-600 dark:text-slate-400 order-2 sm:order-1">
+                <span id="selectedCount">0</span> selected
+            </div>
+            <div class="grid grid-cols-3 gap-2 w-full sm:w-auto order-1 sm:order-2">
+                <button onclick="bulkApprove()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition disabled:opacity-50 text-center" disabled id="bulkApproveBtn">
+                    Approve Selected
+                </button>
+                <button onclick="bulkReject()" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition disabled:opacity-50 text-center" disabled id="bulkRejectBtn">
+                    Reject Selected
+                </button>
+                <button onclick="bulkExport()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition disabled:opacity-50 text-center" disabled id="bulkExportBtn">
+                    Export Selected
+                </button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table (Desktop/Tablet) -->
+    <div class="section-card overflow-x-auto hidden md:block">
+        <table class="w-full" id="transactionsTable">
+            <thead>
+                <tr class="border-b border-slate-300 dark:border-slate-700">
+                    <th class="text-left py-3 px-4">
+                        <input type="checkbox" id="selectAll" class="rounded bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                    </th>
+                    <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer hover:text-slate-900 dark:hover:text-white" onclick="sortTable('date')">
+                        Date <span class="text-xs">▼</span>
+                    </th>
+                    <th class="text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer hover:text-slate-900 dark:hover:text-white" onclick="sortTable('title')">
+                        Title <span class="text-xs">▼</span>
+                    </th>
+                    <th class="hidden md:table-cell text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer hover:text-slate-900 dark:hover:text-white" onclick="sortTable('category')">
+                        Category <span class="text-xs">▼</span>
+                    </th>
+                    <th class="text-right py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer hover:text-slate-900 dark:hover:text-white" onclick="sortTable('amount')">
+                        Amount <span class="text-xs">▼</span>
+                    </th>
+                    <th class="hidden md:table-cell text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Status</th>
+                    <th class="hidden lg:table-cell text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Submitted By</th>
+                    <th class="text-center py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="transactionsBody">
+                {% for tx in transactions %}
+                <tr class="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition transaction-row" data-id="{{ tx.id }}" data-status="{% if tx.approved %}approved{% else %}pending{% endif %}" data-category="{{ tx.category }}">
+                    <td class="py-3 px-4">
+                        <input type="checkbox" class="row-checkbox rounded bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600" value="{{ tx.id }}">
+                    </td>
+                    <td class="py-3 px-4 text-slate-600 dark:text-slate-200 editable" data-field="date" data-value="{{ tx.date|date:'Y-m-d' }}">
+                        {{ tx.date|date:'M d, Y' }}
+                    </td>
+                    <td class="py-3 px-4 text-slate-900 dark:text-white font-medium editable" data-field="title" data-value="{{ tx.title }}">
+                        {{ tx.title }}
+                    </td>
+                    <td class="hidden md:table-cell py-3 px-4 text-slate-700 dark:text-slate-300 editable" data-field="category" data-value="{{ tx.category }}">
+                        <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                            {{ tx.get_category_display }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-right font-bold {% if tx.amount >= 0 %}text-green-400{% else %}text-red-400{% endif %} editable" data-field="amount" data-value="{{ tx.amount }}">
+                        ₹{{ tx.amount|floatformat:2 }}
+                    </td>
+                    <td class="hidden md:table-cell py-3 px-4">
+                        {% if tx.approved %}
+                        <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-green-900 text-green-300">
+                            Approved
+                        </span>
+                        {% else %}
+                        <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-yellow-900 text-yellow-300">
+                            Pending
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="hidden lg:table-cell py-3 px-4 text-slate-500 dark:text-slate-400 text-sm">
+                        {{ tx.created_by.username|default:'Unknown' }}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex justify-center gap-2">
+                            {% if not tx.approved and is_treasurer %}
+                            <button onclick="quickApprove({{ tx.id }})" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1" title="Approve">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                            <button onclick="quickReject({{ tx.id }})" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1" title="Reject">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            {% endif %}
+                            {% if is_treasurer %}
+                            <a href="{% url 'tedx_finance:edit_transaction' tx.id %}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1" title="Edit">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </a>
+                            {% endif %}
+                            {% if tx.proof %}
+                            <a href="{{ tx.proof.url }}" target="_blank" class="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 p-1" title="View Proof">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="py-8 text-center text-slate-500 dark:text-slate-400">
+                        No transactions found. Click "+ New Transaction" to add one.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile Card List (Phones) -->
+    <div class="md:hidden mt-4" aria-label="Transactions list (mobile)">
+        <div class="flex items-center justify-between mb-3">
+            <label class="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-sm">
+                <input type="checkbox" id="selectAllMobile" class="rounded bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                <span>Select all</span>
+            </label>
+            <span class="text-slate-600 dark:text-slate-400 text-sm"><span id="selectedCountMobile">0</span> selected</span>
+        </div>
+
+        <div class="space-y-3">
+            {% for tx in transactions %}
+            <div class="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-4 shadow-sm" data-id="{{ tx.id }}" data-status="{% if tx.approved %}approved{% else %}pending{% endif %}" data-category="{{ tx.category }}">
+                <div class="flex items-start justify-between gap-3">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" class="row-checkbox rounded bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600" value="{{ tx.id }}">
+                        <span class="sr-only">Select {{ tx.title }}</span>
+                    </label>
+                    <div class="text-right">
+                        <div class="font-bold {% if tx.amount >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">₹{{ tx.amount|floatformat:2 }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">{{ tx.date|date:'M d, Y' }}</div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="text-slate-900 dark:text-white font-semibold">{{ tx.title }}</div>
+                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <span class="inline-block px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-300">{{ tx.get_category_display }}</span>
+                        {% if tx.approved %}
+                        <span class="inline-block px-2 py-1 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">Approved</span>
+                        {% else %}
+                        <span class="inline-block px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">By {{ tx.created_by.username|default:'Unknown' }}</div>
+                </div>
+                <div class="mt-3 flex justify-end gap-3">
+                    {% if not tx.approved and is_treasurer %}
+                    <button onclick="quickApprove({{ tx.id }})" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1" title="Approve">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                    <button onclick="quickReject({{ tx.id }})" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1" title="Reject">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+                    {% if is_treasurer %}
+                    <a href="{% url 'tedx_finance:edit_transaction' tx.id %}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1" title="Edit">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                    {% if tx.proof %}
+                    <a href="{{ tx.proof.url }}" target="_blank" class="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 p-1" title="View Proof">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-slate-600 dark:text-slate-400 text-center py-6">No transactions found.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Spacer so sticky bar doesn't cover content -->
+    <div class="h-24 md:hidden"></div>
+
+    <!-- Sticky Mobile Bulk Action Bar -->
+    <div id="mobileBulkBar" class="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-slate-300 dark:border-slate-700 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] shadow-2xl hidden backdrop-blur-sm">
+        <div class="flex items-center justify-between gap-3">
+            <div class="text-slate-700 dark:text-slate-300 text-sm">
+                <span id="mobileBulkCount">0</span> selected
+            </div>
+            <div class="grid grid-cols-3 gap-2 flex-1">
+                <button id="mobileApproveBtn" onclick="bulkApprove()" class="bg-green-600 text-white px-3 py-2 rounded text-sm font-semibold disabled:opacity-50" disabled>
+                    Approve
+                </button>
+                <button id="mobileRejectBtn" onclick="bulkReject()" class="bg-red-600 text-white px-3 py-2 rounded text-sm font-semibold disabled:opacity-50" disabled>
+                    Reject
+                </button>
+                <button id="mobileExportBtn" onclick="bulkExport()" class="bg-blue-600 text-white px-3 py-2 rounded text-sm font-semibold disabled:opacity-50" disabled>
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + N - New transaction
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        showNewTransactionModal();
+    }
+    // / - Focus search
+    if (e.key === '/' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+    // Escape - Clear search
+    if (e.key === 'Escape') {
+        document.getElementById('searchInput').value = '';
+        filterTransactions();
+    }
+});
+
+// Select all checkbox (desktop)
+document.getElementById('selectAll')?.addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+    updateBulkButtons();
+});
+
+// Select all checkbox (mobile)
+document.getElementById('selectAllMobile')?.addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+    updateBulkButtons();
+});
+
+// Update bulk buttons when checkboxes change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('row-checkbox')) {
+        // Persist selected ids
+        try {
+            const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+            localStorage.setItem('tx_selected_ids', JSON.stringify(selectedIds));
+        } catch (_) {}
+        updateBulkButtons();
+    }
+});
+
+function updateBulkButtons() {
+    const selected = document.querySelectorAll('.row-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = selected;
+    const mobileCount = document.getElementById('selectedCountMobile');
+    if (mobileCount) mobileCount.textContent = selected;
+    const buttons = ['bulkApproveBtn', 'bulkRejectBtn', 'bulkExportBtn'];
+    buttons.forEach(id => {
+        document.getElementById(id).disabled = selected === 0;
+    });
+
+    // Sticky mobile bar controls
+    const bar = document.getElementById('mobileBulkBar');
+    const mbCount = document.getElementById('mobileBulkCount');
+    const mbBtns = ['mobileApproveBtn', 'mobileRejectBtn', 'mobileExportBtn'];
+    if (bar) {
+        if (selected > 0) {
+            // If currently hidden, prepare slide-in
+            const wasHidden = bar.classList.contains('hidden');
+            bar.classList.remove('hidden');
+            if (wasHidden) {
+                bar.classList.remove('anim-out');
+                void bar.offsetWidth; // reflow to restart animation
+                bar.classList.add('anim-in');
+            }
+            if (mbCount) mbCount.textContent = selected;
+            mbBtns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = false;
+            });
+        } else {
+            // Play slide-out then hide
+            bar.classList.remove('anim-in');
+            bar.classList.add('anim-out');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduceMotion) {
+                bar.classList.add('hidden');
+            } else {
+                setTimeout(() => bar.classList.add('hidden'), 180);
+            }
+            if (mbCount) mbCount.textContent = '0';
+            mbBtns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = true;
+            });
+        }
+    }
+}
+
+// Collapsible filters (mobile)
+document.getElementById('filtersToggle')?.addEventListener('click', function() {
+    const content = document.getElementById('filtersContent');
+    const chevron = document.getElementById('filtersChevron');
+    if (!content) return;
+    const isHidden = content.classList.contains('hidden');
+    if (isHidden) {
+        content.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        chevron?.classList.remove('rotate-180');
+    }
+});
+
+// Slide animation helpers for the sticky bar
+(function setupStickyBarAnimations() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+    @keyframes slideUpIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slideDownOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
+    #mobileBulkBar.anim-in { animation: slideUpIn 200ms ease-out; }
+    #mobileBulkBar.anim-out { animation: slideDownOut 200ms ease-in; }
+    @media (prefers-reduced-motion: reduce) {
+        #mobileBulkBar.anim-in, #mobileBulkBar.anim-out { animation: none !important; }
+    }
+    `;
+    document.head.appendChild(style);
+})();
+
+// Real-time search and filter
+document.getElementById('searchInput').addEventListener('input', filterTransactions);
+document.getElementById('statusFilter').addEventListener('change', filterTransactions);
+document.getElementById('categoryFilter').addEventListener('change', filterTransactions);
+
+function filterTransactions() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    
+    const rows = document.querySelectorAll('.transaction-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const status = row.dataset.status;
+        const category = row.dataset.category;
+        
+        const matchesSearch = text.includes(searchTerm);
+        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        const matchesCategory = categoryFilter === 'all' || category === categoryFilter;
+        
+        if (matchesSearch && matchesStatus && matchesCategory) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Quick approve/reject functions
+async function quickApprove(id) {
+    if (!confirm('Approve this transaction?')) return;
+    
+    try {
+        const response = await fetch(`/transaction/${id}/approve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        alert('Error approving transaction');
+    }
+}
+
+async function quickReject(id) {
+    if (!confirm('Reject and delete this transaction?')) return;
+    
+    try {
+        const response = await fetch(`/transaction/${id}/reject/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        alert('Error rejecting transaction');
+    }
+}
+
+// Bulk operations
+async function bulkApprove() {
+    const selected = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    if (!confirm(`Approve ${selected.length} transaction(s)?`)) return;
+    
+    try {
+        const response = await fetch('{% url "tedx_finance:bulk_approve_transactions" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ ids: selected })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear selections and reload page
+            localStorage.removeItem('tx_selected_ids');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Bulk approve error:', error);
+        alert('Network error - please try again');
+    }
+}
+
+async function bulkReject() {
+    const selected = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    if (!confirm(`Reject ${selected.length} transaction(s)?`)) return;
+    
+    try {
+        const response = await fetch('{% url "tedx_finance:bulk_reject_transactions" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ ids: selected })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear selections and reload page
+            localStorage.removeItem('tx_selected_ids');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Bulk reject error:', error);
+        alert('Network error - please try again');
+    }
+}
+
+function bulkExport() {
+    const selected = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    window.location.href = `/export/excel/?ids=${selected.join(',')}`;
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showNewTransactionModal() {
+    window.location.href = '{% url "tedx_finance:add_transaction" %}';
+}
+
+// Restore selected checkboxes from localStorage (persistence across pagination if ids remain on page)
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const raw = localStorage.getItem('tx_selected_ids');
+        if (!raw) return updateBulkButtons();
+        const ids = JSON.parse(raw);
+        if (!Array.isArray(ids)) return updateBulkButtons();
+        const map = new Set(ids);
+        document.querySelectorAll('.row-checkbox').forEach(cb => {
+            if (map.has(cb.value)) cb.checked = true;
+        });
+    } catch (_) {}
+    updateBulkButtons();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,748 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-red-900/50 border border-red-600 text-white px-6 py-4 rounded-xl backdrop-blur-sm" role="alert">
+        <strong class="font-bold text-lg">⚠️ An Error Occurred</strong>
+        <p class="mt-2">{{ error }}</p>
+        <p class="text-sm mt-2 text-red-200">Please check your terminal console for details.</p>
+    </div>
+</div>
+
+{% else %}
+<!-- HEADER -->
+<header class="mb-12">
+    <!-- Title Section -->
+    <div class="mb-8 slide-in-left">
+        <h1 class="text-5xl lg:text-6xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-transparent bg-clip-text mb-3">
+            TEDx Finance Hub
+        </h1>
+        <p class="text-slate-400 text-lg">
+            Welcome back, <span class="text-white font-bold">{{ user.username }}</span>! 👋
+        </p>
+    </div>
+
+    <!-- Date Range Filter - Full Width Card -->
+    <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 backdrop-blur-sm mb-6 slide-in-right">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="start_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">
+                    📅 Start Date
+                </label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}"
+                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full">
+            </div>
+            <div class="flex-1 min-w-[200px]">
+                <label for="end_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">
+                    📅 End Date
+                </label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}"
+                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full">
+            </div>
+            <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold px-6 py-2.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 shadow-lg hover:shadow-indigo-500/50 whitespace-nowrap">
+                Apply Filter
+            </button>
+            {% if start_date or end_date %}
+            <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-400 hover:text-white text-sm px-4 py-2.5 hover:bg-slate-700 rounded-lg transition-all font-medium whitespace-nowrap">
+                ✕ Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Action Buttons - Clean 2x2 Grid -->
+    <div class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 slide-in-right" style="animation-delay: 0.1s">
+        <!-- Add Expense -->
+        <a href="{% url 'tedx_finance:add_transaction' %}"
+           class="bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-red-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-red-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span class="text-sm font-bold">Add Expense</span>
+        </a>
+        
+        <!-- View Transactions -->
+        <a href="{% url 'tedx_finance:transactions_table' %}"
+           class="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-purple-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <span class="text-sm font-bold">Transactions</span>
+        </a>
+        
+        <!-- Add Sponsor / Download Excel -->
+        {% if is_treasurer %}
+        <a href="{% url 'tedx_finance:add_sponsor' %}"
+           class="bg-blue-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-blue-700 transition-all hover:scale-105 shadow-lg hover:shadow-blue-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+            </svg>
+            <span class="text-sm font-bold">Add Sponsor</span>
+        </a>
+        {% else %}
+        <a href="{% url 'tedx_finance:export_xlsx' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+           class="bg-green-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-green-700 transition-all hover:scale-105 shadow-lg hover:shadow-green-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-sm font-bold">Excel Report</span>
+        </a>
+        {% endif %}
+        
+        <!-- Add Fund / View Report -->
+        {% if is_treasurer %}
+        <a href="{% url 'tedx_finance:add_management_fund' %}"
+           class="bg-slate-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-slate-700 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-sm font-bold">Add Fund</span>
+        </a>
+        {% else %}
+        <a href="{% url 'tedx_finance:finance_report' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+           class="bg-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:bg-slate-600 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-sm font-bold">View Report</span>
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Export Buttons Row (Treasurers Only) -->
+    {% if is_treasurer %}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 slide-in-right pb-32" style="animation-delay: 0.2s;">
+        <!-- Export Dropdown Button -->
+        <div class="relative inline-block text-left" style="z-index: 9999;">
+            <button id="exportDropdownBtn" type="button" class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-purple-500/50 w-full">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-base font-bold">Export Report ▼</span>
+            </button>
+            <div id="exportDropdown" class="absolute left-0 mt-3 w-full min-w-[240px] rounded-xl shadow-2xl bg-white dark:bg-slate-800 border-2 border-purple-400 dark:border-purple-600 hidden overflow-hidden" style="z-index: 99999;">
+                <a href="{% url 'tedx_finance:export_xlsx' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-green-700 dark:text-green-400 bg-white dark:bg-slate-800 hover:bg-green-100 dark:hover:bg-slate-700 border-b-2 border-slate-200 dark:border-slate-700 transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Excel Report</span>
+                </a>
+                <a href="{% url 'tedx_finance:export_pdf' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-red-700 dark:text-red-400 bg-white dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-slate-700 transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    <span>PDF Report</span>
+                </a>
+            </div>
+            <script>
+                const dropdownBtn = document.getElementById('exportDropdownBtn');
+                const dropdownMenu = document.getElementById('exportDropdown');
+                
+                if (dropdownBtn && dropdownMenu) {
+                    dropdownBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        dropdownMenu.classList.toggle('hidden');
+                    });
+                    
+                    document.addEventListener('click', function(e) {
+                        if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
+                            dropdownMenu.classList.add('hidden');
+                        }
+                    });
+                    
+                    // Close dropdown when clicking on a link
+                    dropdownMenu.querySelectorAll('a').forEach(link => {
+                        link.addEventListener('click', function() {
+                            dropdownMenu.classList.add('hidden');
+                        });
+                    });
+                }
+            </script>
+        </div>
+        
+        <a href="{% url 'tedx_finance:finance_report' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+           class="bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:from-slate-600 hover:via-slate-500 hover:to-slate-600 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-slate-500/50">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-base font-bold">View Report</span>
+        </a>
+        <a href="{% url 'tedx_finance:budgets' %}"
+           class="bg-gradient-to-br from-amber-600 via-orange-600 to-amber-600 text-white font-bold py-5 px-6 rounded-xl hover:from-amber-500 hover:via-orange-500 hover:to-amber-500 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-amber-500/50">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-base font-bold">Budgets</span>
+        </a>
+    </div>
+    {% endif %}
+</header>
+
+<!-- METRICS -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 relative" style="z-index: 1;">
+    <!-- Total Funds Card -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 p-6 group hover:scale-105 transition-all duration-300 cursor-pointer fade-in">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all"></div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-green-400 text-sm font-bold uppercase tracking-wider">Total Funds</h2>
+                <div class="bg-green-500/20 p-4 rounded-2xl group-hover:bg-green-500/30 group-hover:scale-110 transition-all duration-300 shadow-lg shadow-green-500/20">
+                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-white text-5xl font-black mb-2 group-hover:text-green-400 transition-colors">₹{{ total_funds|floatformat:2 }}</p>
+            <p class="text-slate-400 text-sm font-medium">Available income from sponsors & funds</p>
+        </div>
+    </div>
+    
+    <!-- Funds Spent Card -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 p-6 group hover:scale-105 transition-all duration-300 cursor-pointer fade-in" style="animation-delay: 0.1s">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all"></div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-orange-400 text-sm font-bold uppercase tracking-wider">Funds Spent</h2>
+                <div class="bg-orange-500/20 p-4 rounded-2xl group-hover:bg-orange-500/30 group-hover:scale-110 transition-all duration-300 shadow-lg shadow-orange-500/20">
+                    <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-white text-5xl font-black mb-2 group-hover:text-orange-400 transition-colors">₹{{ total_spent|floatformat:2 }}</p>
+            <p class="text-slate-400 text-sm font-medium">Total approved expenses</p>
+        </div>
+    </div>
+    
+    <!-- Remaining Balance Card -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 p-6 group hover:scale-105 transition-all duration-300 cursor-pointer fade-in" style="animation-delay: 0.2s">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all"></div>
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-cyan-400 text-sm font-bold uppercase tracking-wider">Remaining</h2>
+                <div class="bg-cyan-500/20 p-4 rounded-2xl group-hover:bg-cyan-500/30 group-hover:scale-110 transition-all duration-300 shadow-lg shadow-cyan-500/20">
+                    <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-white text-5xl font-black mb-2 group-hover:text-cyan-400 transition-colors">₹{{ remaining_balance|floatformat:2 }}</p>
+            <p class="text-slate-400 text-sm font-medium">Current available balance</p>
+        </div>
+    </div>
+</section>
+
+<!-- MANAGEMENT & SPONSORSHIP FUNDS TABLE -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+    <!-- Management Funds -->
+    <div class="section-card p-6">
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-4">Management Funds</h2>
+        <table class="w-full text-left rounded-lg overflow-hidden shadow-md">
+            <thead>
+                <tr class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white">
+    <th class="py-3 px-5 text-base font-bold">Amount (₹)</th>
+    <th class="py-3 px-5 text-base font-bold">Date Received</th>
+    {% if is_treasurer %}<th class="py-3 px-5 text-base font-bold">Actions</th>{% endif %}
+</tr>
+            </thead>
+            <tbody>
+                {% for fund in management_funds_list %}
+                <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">₹{{ fund.amount|floatformat:2 }}</td>
+    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ fund.date_received }}</td>
+    {% if is_treasurer %}
+    <td class="py-3 px-5 flex gap-2">
+        <a href="{% url 'tedx_finance:edit_management_fund' fund.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Edit</a>
+        <button onclick="deleteManagementFund({{ fund.pk }}, {{ fund.amount }})" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 text-sm">Delete</button>
+    </td>
+    {% endif %}
+</tr>
+                {% empty %}
+                <tr><td colspan="{% if is_treasurer %}3{% else %}2{% endif %}" class="py-3 px-5 text-slate-500 dark:text-slate-400">No management funds found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Sponsorship Funds -->
+    <div class="section-card p-6">
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-4">Sponsorship Funds</h2>
+        <table class="w-full text-left rounded-lg overflow-hidden shadow-md">
+            <thead>
+                <tr class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white">
+    <th class="py-3 px-5 text-base font-bold">Sponsor</th>
+    <th class="py-3 px-5 text-base font-bold">Amount (₹)</th>
+    <th class="py-3 px-5 text-base font-bold">Date Received</th>
+    {% if is_treasurer %}<th class="py-3 px-5 text-base font-bold">Actions</th>{% endif %}
+</tr>
+            </thead>
+            <tbody>
+                {% for sponsor in sponsors_list %}
+                <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ sponsor.name }}</td>
+    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">₹{{ sponsor.amount|floatformat:2 }}</td>
+    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ sponsor.date_received }}</td>
+    {% if is_treasurer %}
+    <td class="py-3 px-5 flex gap-2">
+        <a href="{% url 'tedx_finance:edit_sponsor' sponsor.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Edit</a>
+        <button onclick="deleteSponsor({{ sponsor.pk }}, '{{ sponsor.name }}')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 text-sm">Delete</button>
+    </td>
+    {% endif %}
+</tr>
+                {% empty %}
+                <tr><td colspan="{% if is_treasurer %}4{% else %}3{% endif %}" class="py-3 px-5 text-slate-500 dark:text-slate-400">No sponsorship funds found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+    <!-- PENDING TRANSACTIONS (Treasurer only) -->
+    {% if is_treasurer and pending_transactions %}
+    <section class="section-card mb-8 animate-slide-in border-l-4 border-yellow-500" style="animation-delay: 0.4s">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="bg-yellow-500 bg-opacity-20 p-2 rounded-lg">
+                <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">Pending Approvals</h3>
+            <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">{{ pending_transactions|length }}</span>
+        </div>
+        <div class="space-y-3">
+            {% for tx in pending_transactions %}
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-700 bg-opacity-50 p-4 rounded-lg gap-4 hover:bg-opacity-70 transition-all duration-200 border border-slate-600 hover:border-yellow-500">
+                <div class="flex-1">
+                    <p class="font-semibold text-white text-lg">{{ tx.title }}
+                        <span class="font-normal text-sm text-slate-400 ml-2">by {{ tx.created_by.username }}</span>
+                    </p>
+                    <div class="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                            {{ tx.get_category_display }}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            {{ tx.date }}
+                        </span>
+                        {% if tx.proof %}
+                            <a href="{{ tx.proof.url }}" target="_blank" class="text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                View Proof
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <p class="font-bold text-2xl {% if tx.amount >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                        {% if tx.amount >= 0 %}+{% endif %}₹{{ tx.amount|floatformat:2 }}
+                    </p>
+                    <form action="{% url 'tedx_finance:approve_transaction' tx.pk %}" method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 text-sm rounded-lg hover:bg-green-700 transition-all hover:scale-105 shadow-lg hover:shadow-green-500/50">
+                            ✓ Approve
+                        </button>
+                    </form>
+                    <form action="{% url 'tedx_finance:reject_transaction' tx.pk %}" method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-red-600 text-white font-bold py-2 px-4 text-sm rounded-lg hover:bg-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-red-500/50">
+                            ✕ Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- CHARTS + RECENT TX -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Charts Section -->
+        <div class="lg:col-span-2 space-y-8 fade-in" style="animation-delay: 0.3s">
+            <!-- Spending by Category -->
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm hover:border-slate-600 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-purple-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">Approved Spending by Category</h3>
+                </div>
+                <div class="h-80"><canvas id="categoryPieChart" aria-label="Spending breakdown by category"></canvas></div>
+            </div>
+            
+            <!-- Income Sources -->
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm hover:border-slate-600 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-green-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">Income Sources</h3>
+                </div>
+                <div class="h-60"><canvas id="incomeBarChart" aria-label="Income per source"></canvas></div>
+            </div>
+            
+            <!-- Spending Trend -->
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm hover:border-slate-600 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-blue-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">Spending Trend (Last 6 Months)</h3>
+                </div>
+                <div class="h-80"><canvas id="spendingTrendChart" aria-label="Spending over time"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Recent Transactions & Sponsors -->
+        <aside class="space-y-8 fade-in" style="animation-delay: 0.4s">
+            <!-- Recent Approved Transactions -->
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-indigo-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Recent Transactions</h3>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                    {% for tx in transactions %}
+                    <div class="bg-slate-700/50 border border-slate-600 p-4 rounded-xl hover:bg-slate-700 hover:border-slate-500 transition-all group">
+                        <div class="flex justify-between items-start gap-3 mb-2">
+                            <p class="font-bold text-white text-sm group-hover:text-indigo-400 transition-colors">{{ tx.title }}</p>
+                            <p class="font-black text-lg whitespace-nowrap {% if tx.amount >= 0 %}text-green-400{% else %}text-orange-400{% endif %}">
+                                {% if tx.amount >= 0 %}+{% endif %}₹{{ tx.amount|floatformat:2 }}
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="bg-slate-800 px-2 py-1 rounded">{{ tx.get_category_display }}</span>
+                            <span>{{ tx.date|date:"M d, Y" }}</span>
+                        </div>
+                        {% if tx.proof %}
+                        <a href="{{ tx.proof.url }}" target="_blank" class="text-blue-400 hover:text-blue-300 text-xs mt-2 inline-flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            View Proof
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-slate-400 text-sm">No approved transactions yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Sponsors Section -->
+            {% if sponsors_list %}
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 p-6 backdrop-blur-sm">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-yellow-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-bold text-white dark:text-white">Our Sponsors</h4>
+                </div>
+                <ul class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                    {% for sponsor in sponsors_list %}
+                    <li class="bg-slate-800/50 dark:bg-slate-800/50 border border-slate-700 dark:border-slate-700 p-4 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-800 hover:border-yellow-500/30 transition-all group">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <div class="flex-1">
+                                <span class="text-white dark:text-white font-bold group-hover:text-yellow-400 transition-colors block">{{ sponsor.name }}</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-400">{{ sponsor.date_received|date:'M d, Y' }}</span>
+                            </div>
+                            {% if is_treasurer %}
+                            <div class="flex gap-1">
+                                <a href="{% url 'tedx_finance:edit_sponsor' sponsor.id %}" class="text-blue-400 hover:text-blue-300 p-1" title="Edit Sponsor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                <button onclick="deleteSponsor({{ sponsor.id }}, '{{ sponsor.name|escapejs }}')" class="text-red-400 hover:text-red-300 p-1" title="Delete Sponsor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-400 dark:text-slate-400">Contribution</span>
+                            <span class="text-green-400 dark:text-green-400 font-bold">₹{{ sponsor.amount|floatformat:2 }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Management Funds Section -->
+            {% if management_funds_list %}
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 p-6 backdrop-blur-sm mt-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-green-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-bold text-white dark:text-white">Management Funds</h4>
+                </div>
+                <ul class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                    {% for fund in management_funds_list %}
+                    <li class="bg-slate-800/50 dark:bg-slate-800/50 border border-slate-700 dark:border-slate-700 p-4 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-800 hover:border-green-500/30 transition-all group">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1">
+                                <span class="text-white dark:text-white font-bold group-hover:text-green-400 transition-colors block">₹{{ fund.amount|floatformat:2 }}</span>
+                                <span class="text-xs text-slate-400 dark:text-slate-400">{{ fund.date_received|date:'M d, Y' }}</span>
+                            </div>
+                            {% if is_treasurer %}
+                            <div class="flex gap-1">
+                                <a href="{% url 'tedx_finance:edit_management_fund' fund.id %}" class="text-blue-400 hover:text-blue-300 p-1" title="Edit Fund">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                <button onclick="deleteManagementFund({{ fund.id }}, '{{ fund.amount|floatformat:2 }}')" class="text-red-400 hover:text-red-300 p-1" title="Delete Fund">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+
+<!-- chart data -->
+{{ category_spending|json_script:"category-spending-data" }}
+{{ income_data|json_script:"income-data" }}
+{{ spending_months|json_script:"spending-months-data" }}
+{{ spending_amounts|json_script:"spending-amounts-data" }}
+
+<script>
+    function initializeCharts() {
+        // This function will only run after we confirm Chart.js is loaded.
+        const categoryElement = document.getElementById('category-spending-data');
+        const incomeElement = document.getElementById('income-data');
+        
+        const catData = categoryElement ? JSON.parse(categoryElement.textContent || '[]') : [];
+        const incData = incomeElement ? JSON.parse(incomeElement.textContent || '[]') : [];
+
+        // CRITICAL FIX: Accessing raw 'category' field for JavaScript map
+        const catLabels = catData.map(i => i.category); 
+        const catTotals = catData.map(i => Math.abs(i.total));
+
+        // Spending Doughnut Chart
+        const pieChartCtx = document.getElementById('categoryPieChart');
+        if (pieChartCtx && catLabels.length > 0 && catLabels[0] !== null) {
+            new Chart(pieChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{ data: catTotals, backgroundColor: ['#F87171','#60A5FA','#34D399','#FBBF24','#A78BFA','#F472B6','#A3A3A3'], borderColor: '#1E293B', borderWidth: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#D1D5DB' } } } }
+            });
+        }
+
+        // Income Bar Chart
+        const barChartCtx = document.getElementById('incomeBarChart');
+        if (barChartCtx && incData.length > 0) {
+            new Chart(barChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Management Fund','Sponsor Funds'],
+                    datasets: [{ label: 'Total Income', data: incData, backgroundColor: ['#60A5FA','#34D399'], borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, x: { ticks: { color: '#D1D5DB', font: { size: 14 } }, grid: { display: false } } } }
+            });
+        }
+        
+            // Spending Trend Line Chart
+            const trendChartCtx = document.getElementById('spendingTrendChart');
+            const monthsElement = document.getElementById('spending-months-data');
+            const amountsElement = document.getElementById('spending-amounts-data');
+        
+            if (trendChartCtx && monthsElement && amountsElement) {
+                const months = JSON.parse(monthsElement.textContent || '[]');
+                const amounts = JSON.parse(amountsElement.textContent || '[]');
+            
+                new Chart(trendChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Monthly Spending',
+                            data: amounts,
+                            borderColor: '#EF4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#EF4444',
+                            pointBorderColor: '#1E293B',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1E293B',
+                                titleColor: '#F1F5F9',
+                                bodyColor: '#F1F5F9',
+                                borderColor: '#475569',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return '₹' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    }
+                                },
+                                grid: { color: '#334155' }
+                            },
+                            x: {
+                                ticks: { color: '#D1D5DB', font: { size: 12 } },
+                                grid: { display: false }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                });
+            }
+    }
+
+    // This robust function waits for Chart.js to be ready before trying to draw the charts.
+    function waitForChartJS(callback) {
+        if (typeof Chart !== 'undefined') {
+            callback();
+        } else {
+            setTimeout(() => waitForChartJS(callback), 100);
+        }
+    }
+
+    // We start the process when the window is fully loaded.
+    window.addEventListener('load', () => {
+        waitForChartJS(initializeCharts);
+    });
+
+    // Delete confirmation functions
+    function deleteSponsor(id, name) {
+        if (confirm(`Are you sure you want to delete sponsor "${name}"? This action cannot be undone.`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/sponsor/${id}/delete/`;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function deleteManagementFund(id, amount) {
+        if (confirm(`Are you sure you want to delete the management fund of ₹${amount}? This action cannot be undone.`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/fund/${id}/delete/`;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Toggle export dropdown
+    function toggleExportDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('exportDropdown');
+        dropdown.classList.toggle('hidden');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('exportDropdown');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

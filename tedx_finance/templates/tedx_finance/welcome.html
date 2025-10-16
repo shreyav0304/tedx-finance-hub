@@ -1,0 +1,86 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Welcome - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center -mt-16">
+    <div class="text-center max-w-2xl px-8 animate-fade-in bg-gradient-to-br from-slate-800/60 via-slate-700/70 to-slate-900/80 backdrop-blur-lg shadow-2xl border border-slate-700 rounded-2xl py-10 transition-colors duration-300" aria-label="Welcome section">
+        <!-- Hero Icon -->
+        <div class="mb-8">
+            <div class="inline-block p-6 bg-gradient-to-br from-red-500 to-orange-500 rounded-full shadow-2xl animate-pulse" aria-label="TEDx logo icon">
+                <svg class="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Welcome Text -->
+    <h1 class="text-5xl md:text-6xl font-extrabold mb-4 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent" aria-label="TEDx Finance Hub">
+            TEDx Finance Hub
+        </h1>
+    <p class="text-xl md:text-2xl text-slate-300 mb-8" aria-label="App description">
+            Smart. Simple. Powerful financial management for your TEDx event.
+        </p>
+        
+        <!-- Features -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left">
+            <div class="section-card animate-slide-in bg-gradient-to-br from-blue-900/40 via-blue-800/30 to-slate-900/40 backdrop-blur-lg shadow-lg border border-blue-700 rounded-xl p-6" style="animation-delay: 0.1s" aria-label="Feature: Real-time Tracking">
+                <div class="bg-blue-500 bg-opacity-20 p-3 rounded-lg w-fit mb-3">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Real-time Tracking</h3>
+                <p class="text-slate-400 text-sm">Monitor every rupee with live dashboards and beautiful charts.</p>
+            </div>
+            
+            <div class="section-card animate-slide-in bg-gradient-to-br from-green-900/40 via-green-800/30 to-slate-900/40 backdrop-blur-lg shadow-lg border border-green-700 rounded-xl p-6" style="animation-delay: 0.2s" aria-label="Feature: Secure & Audited">
+                <div class="bg-green-500 bg-opacity-20 p-3 rounded-lg w-fit mb-3">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Secure & Audited</h3>
+                <p class="text-slate-400 text-sm">Full audit trail with permission-based access control.</p>
+            </div>
+            
+            <div class="section-card animate-slide-in bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-slate-900/40 backdrop-blur-lg shadow-lg border border-purple-700 rounded-xl p-6" style="animation-delay: 0.3s" aria-label="Feature: Lightning Fast">
+                <div class="bg-purple-500 bg-opacity-20 p-3 rounded-lg w-fit mb-3">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Lightning Fast</h3>
+                <p class="text-slate-400 text-sm">Bulk imports, instant exports, and seamless workflows.</p>
+            </div>
+        </div>
+
+        <!-- CTA Buttons -->
+    <div class="flex gap-4 justify-center flex-wrap mt-8">
+            <a href="{% url 'login' %}" class="bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold py-4 px-8 rounded-xl hover:from-red-700 hover:to-orange-700 transition-all transform hover:scale-105 shadow-2xl hover:shadow-red-500/50 text-lg" aria-label="Sign in to your account">
+                Sign In →
+            </a>
+            <a href="{% url 'tedx_finance:signup' %}" class="bg-slate-700 text-white font-bold py-4 px-8 rounded-xl hover:bg-slate-600 transition-all transform hover:scale-105 shadow-xl text-lg border border-slate-600" aria-label="Create a new account">
+                Create Account
+            </a>
+        </div>
+
+        <!-- Footer Note -->
+    <p class="text-slate-500 mt-12 text-sm" aria-label="Footer note">
+<style>
+    @media (max-width: 640px) {
+        .text-5xl {
+            font-size: 2.25rem !important;
+        }
+        .section-card {
+            padding: 1rem !important;
+        }
+        .grid {
+            gap: 1rem !important;
+        }
+    }
+</style>
+            Built with ❤️ for TEDx organizers worldwide
+        </p>
+    </div>
+</div>
+{% endblock %}

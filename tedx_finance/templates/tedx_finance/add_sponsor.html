@@ -1,0 +1,143 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Add Sponsor - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Back Button -->
+    <a href="{% url 'tedx_finance:dashboard' %}" class="inline-flex items-center text-slate-400 hover:text-white mb-6 transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Dashboard
+    </a>
+
+    <div class="section-card bg-gradient-to-br from-slate-800/60 via-slate-700/70 to-slate-900/80 backdrop-blur-lg shadow-xl border border-slate-700 rounded-2xl p-6 transition-colors duration-300" aria-label="Add sponsor form">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-white">Add New Sponsor</h1>
+            <p class="text-slate-400 mt-2">Record a new sponsorship contribution.</p>
+        </header>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6" aria-label="Sponsor entry form">
+            {% csrf_token %}
+            
+            <!-- Sponsor Name -->
+            <div>
+                <label for="{{ form.name.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Sponsor Name">
+                    Sponsor Name
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Sponsorship Amount in rupees">
+                    Sponsorship Amount (₹)
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.amount }}
+                <p class="text-xs text-slate-400 mt-1">Enter the total amount received from this sponsor</p>
+                {% if form.amount.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.amount.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Date Received -->
+            <div>
+                <label for="{{ form.date_received.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Date received">
+                    Date Received
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.date_received }}
+                {% if form.date_received.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.date_received.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Contact Email -->
+            <div>
+                <label for="{{ form.contact_email.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Contact email">
+                    Contact Email
+                </label>
+                {{ form.contact_email }}
+                <p class="text-xs text-slate-400 mt-1">Optional: Primary contact email for the sponsor</p>
+                {% if form.contact_email.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.contact_email.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Agreement Upload -->
+            <div>
+                <label for="{{ form.agreement.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Upload agreement or contract">
+                    Upload Agreement/Contract
+                </label>
+                <div class="mt-1 flex items-center">
+                    {{ form.agreement }}
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Optional: Upload signed sponsorship agreement</p>
+                {% if form.agreement.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.agreement.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-slate-700">
+                <a href="{% url 'tedx_finance:dashboard' %}" 
+                   class="bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition shadow-md" aria-label="Cancel and return to dashboard">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition shadow-md" aria-label="Save sponsor">
+                    Save Sponsor
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Style form inputs with glassmorphism and theme support */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: rgba(51,65,85,0.7); /* slate-700 glass */
+        border: 1px solid #475569; /* slate-600 */
+        border-radius: 0.75rem;
+        color: white;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px 0 rgba(30,41,59,0.12);
+        transition: all 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    input[type="email"]:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #3B82F6; /* blue-500 */
+        box-shadow: 0 0 0 2px #3B82F6;
+    }
+    input[type="file"] {
+        color: #94A3B8; /* slate-400 */
+    }
+    @media (max-width: 640px) {
+        .section-card {
+            padding: 1rem !important;
+        }
+        .flex {
+            flex-direction: column !important;
+            gap: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+

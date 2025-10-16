@@ -1,0 +1,70 @@
+# ===================================
+# Production Requirements
+# ===================================
+# Install with: pip install -r requirements-prod.txt
+
+# Include base requirements
+-r requirements.txt
+
+# ----- Database -----
+psycopg2-binary==2.9.10        # PostgreSQL adapter (binary version for easy install)
+# OR for production builds from source:
+# psycopg2==2.9.10
+
+# ----- WSGI Server -----
+gunicorn==23.0.0               # Python WSGI HTTP Server
+gevent==25.2.0                 # Async networking library
+
+# ----- Static Files -----
+whitenoise==6.11.0             # Static file serving for production
+Brotli==1.1.0                  # Compression library
+
+# ----- Cloud Storage (Optional) -----
+# boto3==1.37.0                # AWS SDK
+# django-storages==1.15.1      # Django storage backends
+
+# ----- Caching -----
+redis==6.0.0                   # Redis Python client
+django-redis==5.4.0            # Redis cache backend for Django
+hiredis==3.1.0                 # Faster Redis parser
+
+# ----- Task Queue -----
+celery==5.5.0                  # Distributed task queue
+django-celery-beat==2.9.0      # Periodic task scheduler
+django-celery-results==2.5.1   # Task result backend
+
+# ----- Monitoring & Logging -----
+sentry-sdk==2.20.0             # Error tracking and monitoring
+django-log-request-id==2.1.0   # Request ID logging
+
+# ----- Email -----
+django-anymail==13.2.0         # Email backend (SendGrid, Mailgun, etc.)
+
+# ----- Security -----
+django-cors-headers==4.7.0     # CORS handling
+django-csp==4.1                # Content Security Policy
+
+# ----- Environment Management -----
+python-decouple==3.9           # Environment variable management
+dj-database-url==3.0.1         # Database URL parsing
+
+# ----- Performance -----
+django-cachalot==2.7.1         # Automatic query caching
+django-compressor==4.7.1       # CSS/JS compression
+
+# ===================================
+# Platform-Specific (Uncomment as needed)
+# ===================================
+
+# ----- Heroku -----
+# django-heroku==0.3.1
+
+# ----- AWS -----
+# awsebcli==3.21.1             # Elastic Beanstalk CLI
+# boto3==1.37.0
+
+# ----- Azure -----
+# azure-storage-blob==12.25.1
+
+# ----- Google Cloud -----
+# google-cloud-storage==2.19.3

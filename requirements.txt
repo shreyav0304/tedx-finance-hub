@@ -1,0 +1,111 @@
+# ===================================
+# TEDx Finance Hub - Dependencies
+# ===================================
+# Last Updated: October 15, 2025
+# Python: 3.13+
+# Django: 5.2.x
+# Security Audit: pip-audit (passed)
+
+# ----- Core Framework -----
+Django==5.2.7                  # Web framework (SECURITY UPDATE)
+asgiref==3.8.1                 # ASGI support for Django
+sqlparse==0.5.3                # SQL parsing for Django
+tzdata==2025.2                 # Timezone data
+
+# ----- Forms & UI -----
+django-crispy-forms==2.4       # Better form rendering
+crispy-tailwind==1.0.3         # Tailwind CSS integration for crispy-forms
+
+# ----- History & Audit Trail -----
+django-simple-history==3.10.1  # Track model changes and history
+
+# ----- File Handling -----
+openpyxl==3.1.5                # Excel file reading/writing
+et-xmlfile==2.0.0              # XML file handling (required by openpyxl)
+
+# ----- PDF Generation -----
+xhtml2pdf==0.2.17              # HTML to PDF conversion
+reportlab==4.4.4               # PDF generation library
+html5lib==1.1                  # HTML parsing for xhtml2pdf
+Pillow==11.3.0                 # Image processing for PDF
+pypdf==6.1.1                   # PDF manipulation
+svglib==1.6.0                  # SVG support for PDFs
+python-bidi==0.6.6             # Bidirectional text support
+arabic-reshaper==3.0.0         # Arabic text shaping
+lxml==6.0.2                    # XML/HTML processing
+cssselect2==0.8.0              # CSS selectors for HTML parsing
+tinycss2==1.4.0                # CSS parsing
+webencodings==0.5.1            # Character encoding
+
+# ----- Security & Cryptography -----
+pyHanko==0.31.0                # PDF signing (for xhtml2pdf)
+pyhanko-certvalidator==0.29.0  # Certificate validation
+cryptography==45.0.7           # Cryptographic recipes
+cffi==2.0.0                    # Foreign function interface
+pycparser==2.23                # C parser for cffi
+asn1crypto==1.5.1              # ASN.1 parsing
+
+# ----- Utilities -----
+PyYAML==6.0.3                  # YAML parsing
+requests==2.32.5               # HTTP library (SECURITY UPDATE)
+urllib3==2.5.0                 # HTTP client (SECURITY UPDATE)
+certifi==2025.4.26             # SSL certificates
+idna==3.10                     # Internationalized domain names
+charset-normalizer==3.4.2      # Character encoding detection
+six==1.17.0                    # Python 2/3 compatibility
+
+# ----- Graphics & Rendering -----
+pycairo==1.28.0                # Cairo graphics library
+rlPyCairo==0.4.0               # ReportLab Cairo integration
+freetype-py==2.5.1             # Font rendering
+
+# ----- Other Dependencies -----
+oscrypto==1.3.0                # Cryptography library
+uritools==5.0.0                # URI parsing
+tzlocal==5.3.1                 # Local timezone detection
+
+# ===================================
+# Development Dependencies (Optional)
+# ===================================
+# Uncomment these for development:
+
+# ----- Testing -----
+# pytest==8.3.5
+# pytest-django==4.9.0
+# coverage==7.6.9
+
+# ----- Code Quality -----
+# black==25.0.0
+# flake8==7.2.0
+# pylint==3.5.1
+# mypy==1.15.0
+
+# ----- Debugging -----
+# django-debug-toolbar==5.0.0
+# ipython==9.2.1
+
+# ===================================
+# Production Dependencies (Optional)
+# ===================================
+# Uncomment these for production deployment:
+
+# ----- Database -----
+# psycopg2-binary==2.9.10     # PostgreSQL adapter
+
+# ----- WSGI Server -----
+# gunicorn==23.0.0            # Python WSGI HTTP Server
+
+# ----- Static Files -----
+# whitenoise==6.11.0          # Static file serving
+
+# ----- Monitoring -----
+# sentry-sdk==2.20.0          # Error tracking
+
+# ===================================
+# Notes
+# ===================================
+# - All versions are pinned for reproducibility
+# - Run 'pip install -r requirements.txt' to install
+# - For production, uncomment production dependencies
+# - Update regularly: pip list --outdated
+# - Security check: pip-audit or safety check

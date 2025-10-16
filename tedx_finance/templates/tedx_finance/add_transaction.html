@@ -1,0 +1,141 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Add Transaction - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Back Button -->
+    <a href="{% url 'tedx_finance:dashboard' %}" class="inline-flex items-center text-slate-400 hover:text-white mb-6 transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Back to Dashboard
+    </a>
+
+    <div class="section-card bg-gradient-to-br from-slate-800/60 via-slate-700/70 to-slate-900/80 backdrop-blur-lg shadow-xl border border-slate-700 rounded-2xl p-6 transition-colors duration-300" aria-label="Add transaction form">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-white">Add New Expense</h1>
+            <p class="text-slate-400 mt-2">Record a new transaction for approval.</p>
+        </header>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6" aria-label="Transaction entry form">
+            {% csrf_token %}
+            
+            <!-- Title -->
+            <div>
+                <label for="{{ form.title.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Transaction Title">
+                    Transaction Title
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Amount in rupees">
+                    Amount (₹)
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.amount }}
+                <p class="text-xs text-slate-400 mt-1">Enter negative amount for expenses (e.g., -5000)</p>
+                {% if form.amount.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.amount.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label for="{{ form.category.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Transaction category">
+                    Category
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.category.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Date -->
+            <div>
+                <label for="{{ form.date.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Transaction date">
+                    Date
+                    <span class="text-red-400">*</span>
+                </label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.date.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Proof Upload -->
+            <div>
+                <label for="{{ form.proof.id_for_label }}" class="block text-slate-300 font-semibold mb-2" aria-label="Upload proof (receipt or invoice)">
+                    Upload Proof (Receipt/Invoice)
+                </label>
+                <div class="mt-1 flex items-center">
+                    {{ form.proof }}
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Supported formats: PDF, JPG, PNG (Max 5MB)</p>
+                {% if form.proof.errors %}
+                    <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.proof.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-slate-700">
+                <a href="{% url 'tedx_finance:dashboard' %}" 
+                   class="bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition shadow-md" aria-label="Cancel and return to dashboard">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition shadow-md" aria-label="Submit transaction for approval">
+                    Submit for Approval
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Style form inputs with glassmorphism and theme support */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: rgba(51,65,85,0.7); /* slate-700 glass */
+        border: 1px solid #475569; /* slate-600 */
+        border-radius: 0.75rem;
+        color: white;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px 0 rgba(30,41,59,0.12);
+        transition: all 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #EF4444; /* red-500 */
+        box-shadow: 0 0 0 2px #EF4444;
+    }
+    input[type="file"] {
+        color: #94A3B8; /* slate-400 */
+    }
+    @media (max-width: 640px) {
+        .section-card {
+            padding: 1rem !important;
+        }
+        .flex {
+            flex-direction: column !important;
+            gap: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+

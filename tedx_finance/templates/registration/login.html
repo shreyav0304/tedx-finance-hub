@@ -1,0 +1,110 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}TEDx Finance Hub{% endblock %}</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter font -->
+    <link rel="preconnect" href="https://rsms.me">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+    <style>
+        html { font-family: 'Inter', sans-serif; }
+        .metric-card, .section-card {
+            background-color: #1E293B; /* slate-800 */
+            border: 1px solid #334155; /* slate-700 */
+            padding: 1.5rem;
+            border-radius: 1rem;
+        }
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .message-success {
+            background-color: #10B981; /* Emerald-500 */
+            color: #D1FAE5; /* Emerald-50 */
+        }
+        /* This is the new style for error messages */
+        .message-error {
+            background-color: #EF4444; /* Red-500 */
+            color: #FEE2E2; /* Red-100 */
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200">
+
+<div class="container mx-auto p-8">
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message message-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}
+    <!-- Login Form -->
+    <div class="max-w-md mx-auto mt-16">
+        <div class="section-card">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">Login to TEDx Finance Hub</h2>
+            
+            {% if form.errors %}
+            <div class="bg-red-500 text-white px-4 py-3 rounded-lg mb-4">
+                <strong>Error:</strong> Invalid username or password.
+            </div>
+            {% endif %}
+            
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-slate-300 font-semibold mb-2">Username</label>
+                    <input type="text" 
+                           name="{{ form.username.name }}" 
+                           id="{{ form.username.id_for_label }}"
+                           class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                           required>
+                </div>
+                
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-slate-300 font-semibold mb-2">Password</label>
+                    <input type="password" 
+                           name="{{ form.password.name }}" 
+                           id="{{ form.password.id_for_label }}"
+                           class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                           required>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition">
+                    Login
+                </button>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+            
+                <p class="text-center text-slate-400 mt-4">
+                    <a href="{% url 'password_reset' %}" class="text-blue-500 hover:underline text-sm">
+                        Forgot your password?
+                    </a>
+                </p>
+            
+            <p class="text-center text-slate-400 mt-6">
+                Don't have an account? 
+                <a href="{% url 'tedx_finance:signup' %}" class="text-red-500 hover:underline font-semibold">Sign up here</a>
+            </p>
+        </div>
+    </div>
+    {% endblock %}
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,42 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Bulk Import Transactions - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-3xl font-bold text-white mb-6">Bulk Import Transactions</h1>
+
+  <div class="section-card">
+    <p class="text-slate-300 mb-4">Upload an .xlsx file with columns: Date (YYYY-MM-DD), Title, Category, Amount, SubmittedBy (optional username).</p>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="block text-slate-300 text-sm font-semibold mb-2">Excel File (.xlsx)</label>
+        <input type="file" name="file" accept=".xlsx" required class="w-full text-slate-200" />
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Import</button>
+        <a href="{% url 'tedx_finance:transactions_table' %}" class="text-slate-300 hover:text-white">Cancel</a>
+      </div>
+    </form>
+
+    {% if report %}
+      <div class="mt-6">
+        <h2 class="text-xl font-semibold text-white mb-2">Import Summary</h2>
+        <p class="text-slate-300">Created: {{ report.created }} • Errors: {{ report.errors|length }}</p>
+        {% if report.errors %}
+          <ul class="mt-3 space-y-2">
+            {% for err in report.errors %}
+            <li class="text-red-400 text-sm">Row {{ err.row }}: {{ err.message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="mt-6 text-slate-400 text-sm">
+      <p>Valid categories: {% for value, label in categories %}<code class="bg-slate-800 px-1 py-0.5 rounded">{{ value }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

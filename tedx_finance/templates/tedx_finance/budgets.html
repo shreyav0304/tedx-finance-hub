@@ -1,0 +1,90 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Budget Tracker - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Budget Tracker</h1>
+      <p class="text-slate-400 mt-1">Plan and monitor category spending</p>
+    </div>
+    <div class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:gap-3">
+      {% if is_treasurer %}
+      <a href="/admin/tedx_finance/budget/add/" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition w-full sm:w-auto text-center">
+        + New Budget
+      </a>
+      {% endif %}
+      <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition w-full sm:w-auto text-center">
+        Dashboard
+      </a>
+    </div>
+  </div>
+
+  {% if budgets %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% for budget in budgets %}
+  <div class="section-card bg-gradient-to-br from-slate-800/60 via-slate-700/70 to-slate-900/80 backdrop-blur-lg shadow-xl border border-slate-700 rounded-2xl p-6 transition-colors duration-300" aria-label="Budget card for {{ budget.get_category_display }}">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xl font-bold text-white">{{ budget.get_category_display }}</h3>
+  {% if budget.is_exceeded %}
+  <span class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold border border-red-400 shadow-md" aria-label="Budget exceeded">⚠ Exceeded</span>
+  {% elif budget.utilization_percent >= 80 %}
+  <span class="bg-yellow-500 text-slate-900 px-3 py-1 rounded-full text-xs font-bold border border-yellow-300 shadow-md" aria-label="Budget warning">⚠ Warning</span>
+  {% else %}
+  <span class="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold border border-green-400 shadow-md" aria-label="Budget on track">✓ On Track</span>
+  {% endif %}
+      </div>
+      <p class="text-sm text-slate-400 mb-4">{{ budget.start_date }} to {{ budget.end_date }}</p>
+
+  <div class="space-y-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+          <span class="text-slate-300">Budget:</span>
+          <span class="text-lg font-bold text-white" aria-label="Budget amount">₹{{ budget.amount|floatformat:2 }}</span>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+          <span class="text-slate-300">Spent:</span>
+          <span class="text-lg font-bold {% if budget.is_exceeded %}text-red-400{% else %}text-yellow-400{% endif %}" aria-label="Amount spent">₹{{ budget.spent|floatformat:2 }}</span>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+          <span class="text-slate-300">Remaining:</span>
+          <span class="text-lg font-bold {% if budget.remaining >= 0 %}text-green-400{% else %}text-red-400{% endif %}" aria-label="Amount remaining">
+            {% if budget.remaining >= 0 %}₹{{ budget.remaining|floatformat:2 }}{% else %}-₹{{ budget.remaining|floatformat:2|slice:"1:" }}{% endif %}
+          </span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="mt-4" aria-label="Budget utilization">
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Utilization</span>
+            <span>{{ budget.utilization_percent|floatformat:1 }}%</span>
+          </div>
+          <div class="w-full bg-slate-700/80 rounded-full h-3 overflow-hidden border border-slate-600">
+            <div class="h-3 rounded-full transition-all shadow-lg"
+              style="width: {{ budget.utilization_percent }}%;"
+              aria-valuenow="{{ budget.utilization_percent }}"
+              aria-valuemin="0" aria-valuemax="100"
+              {% if budget.is_exceeded %}class="bg-red-500"{% elif budget.utilization_percent >= 80 %}class="bg-yellow-500"{% else %}class="bg-green-500"{% endif %}></div>
+          </div>
+        </div>
+      </div>
+
+      {% if is_treasurer %}
+      <div class="mt-4 pt-4 border-t border-slate-700">
+        <a href="/admin/tedx_finance/budget/{{ budget.id }}/change/" class="text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2" aria-label="Edit budget for {{ budget.get_category_display }}">Edit Budget</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="section-card text-center py-12">
+    <p class="text-slate-400 text-lg mb-4">No budgets configured yet.</p>
+    {% if is_treasurer %}
+    <a href="/admin/tedx_finance/budget/add/" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition inline-block">
+      Create First Budget
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

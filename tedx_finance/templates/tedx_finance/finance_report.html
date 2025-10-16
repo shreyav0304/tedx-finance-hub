@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEDx Finance Report</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        h1, h2 { color: #E62B1E; } /* TED Red */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .summary { margin-top: 30px; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd; }
+        .summary p { margin: 5px 0; }
+        .total { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>TEDx Finance Report</h1>
+    {% if start_date or end_date %}
+    <p><strong>Period:</strong>
+        {% if start_date %}From {{ start_date }}{% endif %}
+        {% if start_date and end_date %} to {% endif %}
+        {% if end_date %}{{ end_date }}{% endif %}
+    </p>
+    {% endif %}
+    
+    <div class="summary">
+        <h2>Financial Summary</h2>
+        <p>Total Income: <span class="total">₹{{ total_income|floatformat:2 }}</span></p>
+        <p>Total Spent: <span class="total">₹{{ total_spent|floatformat:2 }}</span></p>
+        <p>Net Balance: <span class="total">₹{{ net_balance|floatformat:2 }}</span></p>
+    </div>
+
+    <h2>All Transactions</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.date }}</td>
+                <td>{{ tx.title }}</td>
+                <td>{{ tx.get_category_display }}</td>
+                <td style="color: {% if tx.amount < 0 %}#D9534F;{% else %}#5CB85C;{% endif %}">
+                    {{ tx.amount|floatformat:2 }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No transactions found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if sponsors_with_tiers %}
+    <h2>Sponsors</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Tier</th>
+                <th>Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sponsors_with_tiers %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td>{{ s.tier }}</td>
+                <td>{{ s.amount|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</body>
+</html>
