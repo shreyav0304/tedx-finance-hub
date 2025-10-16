@@ -11,6 +11,7 @@ Django==5.2.7                  # Web framework (SECURITY UPDATE)
 asgiref==3.8.1                 # ASGI support for Django
 sqlparse==0.5.3                # SQL parsing for Django
 tzdata==2025.2                 # Timezone data
+whitenoise==6.7.0              # Static files in production (Vercel)
 
 # ----- Forms & UI -----
 django-crispy-forms==2.4       # Better form rendering

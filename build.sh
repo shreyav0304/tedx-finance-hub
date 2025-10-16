@@ -1,11 +1,14 @@
-#!/bin/bash
-# Build script for Vercel deployment
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Install dependencies
-pip install -r requirements.txt
+echo "[build] Installing dependencies..."
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
-# Collect static files
+echo "[build] Running migrations..."
+python manage.py migrate --no-input
+
+echo "[build] Collecting static files..."
 python manage.py collectstatic --no-input
 
-# Run migrations
-python manage.py migrate --no-input
+echo "[build] Build completed."
