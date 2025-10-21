@@ -2,7 +2,7 @@ import os
 from datetime import date
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Transaction, ManagementFund, Sponsor
+from .models import Transaction, ManagementFund, Sponsor, Category
 
 # --------------------------------------------------
 # Reusable Helper Functions for File Validation
@@ -107,6 +107,21 @@ class TransactionForm(forms.ModelForm):
     def __init__(self, user=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        # Dynamic category choices: user-defined categories first, then defaults (without duplicates)
+        try:
+            dynamic = list(Category.objects.all().values_list('name', 'name'))
+        except Exception:
+            dynamic = []
+        default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+        # Remove duplicates preserving order
+        seen = set()
+        merged = []
+        for val, label in dynamic + default_choices:
+            if val not in seen:
+                merged.append((val, label))
+                seen.add(val)
+        if merged:
+            self.fields['category'].choices = merged
         # Only show the 'approve_now' checkbox to staff members
         if not self.user or not self.user.is_staff:
             del self.fields['approve_now']

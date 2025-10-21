@@ -52,6 +52,14 @@
                     <span class="text-red-400">*</span>
                 </label>
                 {{ form.category }}
+                {% if is_treasurer %}
+                <div class="mt-2 flex items-center gap-3 flex-wrap">
+                    <button type="button" id="btnAddCat" class="px-2 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700">+ Add category</button>
+                    <button type="button" id="btnEditCat" class="px-2 py-1 text-xs rounded-md bg-slate-600 text-white hover:bg-slate-700">Edit selected</button>
+                    <a href="{% url 'tedx_finance:manage_categories' %}" class="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2">Manage categories</a>
+                    <span id="catStatus" class="text-xs text-slate-400"></span>
+                </div>
+                {% endif %}
                 {% if form.category.errors %}
                     <p class="text-red-400 text-sm mt-1" aria-live="polite">{{ form.category.errors.0 }}</p>
                 {% endif %}
@@ -98,6 +106,80 @@
     </div>
 </div>
 
+<script>
+(function(){
+  const addBtn = document.getElementById('btnAddCat');
+  const editBtn = document.getElementById('btnEditCat');
+  const selectEl = document.getElementById('id_category');
+  const statusEl = document.getElementById('catStatus');
+  if (!selectEl) return;
+
+  function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+  const csrfToken = getCookie('csrftoken');
+
+  function setStatus(msg, ok=true){
+    if(!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = `text-xs ${ok ? 'text-green-400' : 'text-red-400'}`;
+    setTimeout(()=>{ statusEl.textContent = ''; statusEl.className = 'text-xs text-slate-400'; }, 2500);
+  }
+
+  function repopulateOptions(list, selectValue){
+    // list: [{value,label}]
+    const current = selectEl.value;
+    selectEl.innerHTML = '';
+    list.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.value;
+      opt.textContent = item.label;
+      selectEl.appendChild(opt);
+    });
+    if (selectValue) selectEl.value = selectValue;
+    if (!selectEl.value && current) selectEl.value = current; // fallback
+  }
+
+  async function quickAdd(){
+    const name = prompt('New category name');
+    if (!name) return;
+    try{
+      const res = await fetch("{% url 'tedx_finance:quick_add_category' %}",{ credentials: 'same-origin',
+        method:'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({name})
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || 'Failed');
+      repopulateOptions(data.categories, data.name);
+      setStatus('Category added');
+    }catch(e){ setStatus(e.message || 'Error adding', false); }
+  }
+
+  async function quickEdit(){
+    const oldName = selectEl.value;
+    if (!oldName) { alert('Select a category to edit'); return; }
+    const newName = prompt('Rename category', oldName);
+    if (!newName || newName === oldName) return;
+    try{
+      const res = await fetch("{% url 'tedx_finance:quick_rename_category' %}",{ credentials: 'same-origin',
+        method:'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({old_name: oldName, new_name: newName})
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.error || 'Failed');
+      repopulateOptions(data.categories, data.name);
+      setStatus('Category renamed');
+    }catch(e){ setStatus(e.message || 'Error renaming', false); }
+  }
+
+  if (addBtn) addBtn.addEventListener('click', quickAdd);
+  if (editBtn) editBtn.addEventListener('click', quickEdit);
+})();
+</script>
 <style>
     /* Style form inputs with glassmorphism and theme support */
     input[type="text"],

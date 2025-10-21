@@ -116,6 +116,7 @@
                         Amount <span class="text-xs">▼</span>
                     </th>
                     <th class="hidden md:table-cell text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Status</th>
+                    <th class="hidden xl:table-cell text-center py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Proof</th>
                     <th class="hidden lg:table-cell text-left py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Submitted By</th>
                     <th class="text-center py-3 px-4 text-slate-600 dark:text-slate-300 font-semibold">Actions</th>
                 </tr>
@@ -149,6 +150,23 @@
                         <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-yellow-900 text-yellow-300">
                             Pending
                         </span>
+                        {% endif %}
+                    </td>
+                    <td class="hidden xl:table-cell py-3 px-4 text-center">
+                        {% if tx.proof %}
+                            <a href="{{ tx.proof.url }}" target="_blank" class="inline-block" title="Click to view full proof">
+                                {% if tx.proof.name|lower|slice:"-4:" in ".jpg,.png,.gif.jpeg" or tx.proof.name|lower|slice:"-5:" == ".jpeg" %}
+                                    <img src="{{ tx.proof.url }}" alt="Proof" class="w-16 h-16 object-cover rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-125 hover:z-50 transition-transform duration-200 shadow-md">
+                                {% else %}
+                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 hover:scale-110 transition-transform">
+                                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            <span class="text-slate-400 dark:text-slate-600 text-xs">No proof</span>
                         {% endif %}
                     </td>
                     <td class="hidden lg:table-cell py-3 px-4 text-slate-500 dark:text-slate-400 text-sm">
@@ -188,7 +206,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colspan="9" class="py-8 text-center text-slate-500 dark:text-slate-400">
                         No transactions found. Click "+ New Transaction" to add one.
                     </td>
                 </tr>
@@ -231,6 +249,23 @@
                         {% endif %}
                     </div>
                     <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">By {{ tx.created_by.username|default:'Unknown' }}</div>
+                    
+                    {% if tx.proof %}
+                    <div class="mt-2">
+                        <a href="{{ tx.proof.url }}" target="_blank" class="inline-block" title="Click to view proof">
+                            {% if tx.proof.name|lower|slice:"-4:" in ".jpg,.png,.gif.jpeg" or tx.proof.name|lower|slice:"-5:" == ".jpeg" %}
+                                <img src="{{ tx.proof.url }}" alt="Proof" class="w-20 h-20 object-cover rounded border-2 border-purple-300 dark:border-purple-600 shadow-sm">
+                            {% else %}
+                                <div class="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700">
+                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span class="text-xs text-blue-700 dark:text-blue-300 font-medium">Proof attached</span>
+                                </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="mt-3 flex justify-end gap-3">
                     {% if not tx.approved and is_treasurer %}

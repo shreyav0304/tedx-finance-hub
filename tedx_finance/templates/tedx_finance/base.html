@@ -359,6 +359,15 @@
             border: 1px solid #E2E8F0 !important;
         }
         
+        /* Light Theme - Subtle cards (e.g., burn rate boxes) */
+        html.light-theme .bg-slate-700\/30 {
+            background: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+        }
+        html.light-theme .hover\:bg-slate-700\/30:hover {
+            background: #F1F5F9 !important;
+        }
+        
         html.light-theme .bg-slate-700 {
             background: #F1F5F9 !important;
             color: #1E293B !important;
@@ -372,6 +381,10 @@
         html.light-theme .border-slate-600,
         html.light-theme .border-slate-700 {
             border-color: #CBD5E1 !important;
+        }
+        html.light-theme .border-slate-600\/50,
+        html.light-theme .border-slate-700\/50 {
+            border-color: #E2E8F0 !important;
         }
         
         /* Light Theme - Form Inputs */
@@ -1054,6 +1067,18 @@
                            data-nav-link>
                             💰 Budgets
                         </a>
+                        {% if is_treasurer %}
+                        <a href="{% url 'tedx_finance:manage_categories' %}" 
+                           class="nav-link nav-menu-item px-4 py-2 rounded-lg hover:bg-slate-700"
+                           data-nav-link>
+                            🏷️ Categories
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'tedx_finance:budget_suggestions' %}" 
+                           class="nav-link nav-menu-item px-4 py-2 rounded-lg hover:bg-slate-700"
+                           data-nav-link>
+                            💡 Predictions
+                        </a>
                         
                         <!-- User Menu -->
                         <div class="relative group ml-2">
@@ -1141,6 +1166,20 @@
                                   data-mobile-link
                                   role="menuitem">
                         💰 Budgets
+                    </a>
+                              {% if is_treasurer %}
+                              <a href="{% url 'tedx_finance:manage_categories' %}" 
+                                  class="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded-lg" 
+                                  data-mobile-link
+                                  role="menuitem">
+                        🏷️ Categories
+                    </a>
+                              {% endif %}
+                              <a href="{% url 'tedx_finance:budget_suggestions' %}" 
+                                  class="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded-lg" 
+                                  data-mobile-link
+                                  role="menuitem">
+                        💡 Predictions
                     </a>
                     <hr class="border-slate-700 my-2">
                     {% if is_treasurer %}

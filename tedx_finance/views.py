@@ -7,7 +7,7 @@ from django.http import HttpResponse, JsonResponse
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 
-from .models import ManagementFund, Sponsor, Transaction
+from .models import ManagementFund, Sponsor, Transaction, Category
 from .forms import TransactionForm, ManagementFundForm, SponsorForm
 
 import openpyxl
@@ -72,21 +72,249 @@ def budgets(request):
     """Budget tracking view showing all budgets and their utilization."""
     from .models import Budget
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
-    budgets = Budget.objects.all().order_by('category')
+    budgets = Budget.objects.all().order_by('category__name')
     context = {
         'budgets': budgets,
         'is_treasurer': user_is_treasurer,
     }
     return render(request, 'tedx_finance/budgets.html', context)
+
+
+@login_required
+def budget_suggestions(request):
+    """
+    AI-powered budget prediction and recommendations.
+    
+    Analyzes:
+    - Historical spending patterns
+    - Burn rate (spending velocity)
+    - Category-wise allocation efficiency
+    - Projected budget needs for upcoming period
+    - Risk of budget overrun
+    """
+    from .models import Budget
+    from django.db.models import Sum, Count, Avg
+    from django.db.models.functions import TruncWeek
+    from datetime import datetime, timedelta
+    import json
+    
+    user_is_treasurer = is_in_group(request.user, 'Treasurer')
+    
+    # Get all budgets and current financial state
+    budgets = Budget.objects.all().order_by('category__name')
+    
+    # Calculate total income
+    total_income = (
+        (ManagementFund.objects.aggregate(total=Sum('amount'))['total'] or 0) +
+        (Sponsor.objects.aggregate(total=Sum('amount'))['total'] or 0)
+    )
+    
+    # Calculate total spent (approved transactions)
+    total_spent_val = Transaction.objects.filter(
+        approved=True,
+        amount__lt=0
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    total_spent = abs(total_spent_val)
+    
+    remaining_funds = total_income - total_spent
+    
+    # Analyze spending patterns (last 30 days)
+    thirty_days_ago = datetime.now().date() - timedelta(days=30)
+    recent_spending = abs(Transaction.objects.filter(
+        approved=True,
+        amount__lt=0,
+        date__gte=thirty_days_ago
+    ).aggregate(total=Sum('amount'))['total'] or 0)
+    
+    # Calculate burn rate (spending per day)
+    days_analyzed = min(30, (datetime.now().date() - thirty_days_ago).days)
+    if days_analyzed > 0:
+        daily_burn_rate = recent_spending / days_analyzed
+        weekly_burn_rate = daily_burn_rate * 7
+        monthly_burn_rate = daily_burn_rate * 30
+    else:
+        daily_burn_rate = weekly_burn_rate = monthly_burn_rate = 0
+    
+    # Calculate runway (days until funds run out at current burn rate)
+    if daily_burn_rate > 0:
+        runway_days = int(remaining_funds / daily_burn_rate)
+    else:
+        runway_days = 999  # Infinite if not spending
+    
+    # Category-wise analysis with predictions
+    category_insights = []
+    total_suggested_budget = 0
+    
+    for budget in budgets:
+        spent = budget.spent()
+        remaining = budget.remaining()
+        utilization = budget.utilization_percent()
+        
+        # Calculate category burn rate (last 30 days)
+        category_recent_spending = abs(Transaction.objects.filter(
+            category=budget.category.name,
+            approved=True,
+            amount__lt=0,
+            date__gte=thirty_days_ago
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+        
+        if days_analyzed > 0:
+            category_daily_burn = category_recent_spending / days_analyzed
+        else:
+            category_daily_burn = 0
+        
+        # Calculate days remaining in budget period
+        days_remaining = max(0, (budget.end_date - datetime.now().date()).days)
+        
+        # Predict total spending by end of budget period
+        predicted_additional_spend = category_daily_burn * days_remaining
+        predicted_total_spend = spent + predicted_additional_spend
+        
+        # Calculate suggested budget (120% of predicted to have buffer)
+        suggested_budget = predicted_total_spend * 1.2
+        total_suggested_budget += suggested_budget
+        
+        # Determine status and risk level
+        if utilization >= 100:
+            status = 'exceeded'
+            risk_level = 'critical'
+        elif utilization >= 80:
+            status = 'warning'
+            risk_level = 'high'
+        elif utilization >= 60:
+            status = 'moderate'
+            risk_level = 'medium'
+        else:
+            status = 'good'
+            risk_level = 'low'
+        
+        # Calculate if more budget is needed
+        budget_shortage = max(0, predicted_total_spend - float(budget.amount))
+        
+        category_insights.append({
+            'category': budget.category.name,
+            'category_code': budget.category.name,
+            'current_budget': float(budget.amount),
+            'spent': spent,
+            'remaining': remaining,
+            'utilization': round(utilization, 1),
+            'daily_burn_rate': round(category_daily_burn, 2),
+            'predicted_total_spend': round(predicted_total_spend, 2),
+            'suggested_budget': round(suggested_budget, 2),
+            'budget_shortage': round(budget_shortage, 2),
+            'days_remaining': days_remaining,
+            'status': status,
+            'risk_level': risk_level,
+            'needs_increase': budget_shortage > 0,
+        })
+    
+    # Overall recommendations
+    overall_budget_needed = max(total_suggested_budget, total_spent + (monthly_burn_rate * 2))
+    additional_funds_needed = max(0, overall_budget_needed - total_income)
+    
+    # Generate insights and recommendations
+    recommendations = []
+    
+    if runway_days < 30:
+        recommendations.append({
+            'type': 'critical',
+            'icon': '🚨',
+            'title': 'Critical: Funds Running Low',
+            'message': f'At current spending rate, you have only {runway_days} days of runway. Immediate action required!',
+            'action': f'Secure additional ₹{round(monthly_burn_rate * 2):,.0f} to ensure 60 days of operations.'
+        })
+    elif runway_days < 60:
+        recommendations.append({
+            'type': 'warning',
+            'icon': '⚠️',
+            'title': 'Warning: Limited Runway',
+            'message': f'You have {runway_days} days of runway remaining.',
+            'action': f'Plan to secure ₹{round(monthly_burn_rate):,.0f} within next month.'
+        })
+    
+    for insight in category_insights:
+        if insight['needs_increase']:
+            recommendations.append({
+                'type': 'info',
+                'icon': '💡',
+                'title': f"{insight['category']} Budget Increase Needed",
+                'message': f"Current trend suggests you'll exceed budget by ₹{insight['budget_shortage']:,.0f}",
+                'action': f"Consider increasing {insight['category']} budget to ₹{insight['suggested_budget']:,.0f}"
+            })
+    
+    if additional_funds_needed > 0:
+        recommendations.append({
+            'type': 'info',
+            'icon': '💰',
+            'title': 'Additional Funding Required',
+            'message': f'To complete event safely, you need ₹{round(additional_funds_needed):,.0f} more',
+            'action': 'Focus on sponsor acquisition or reduce discretionary spending'
+        })
+    
+    if not recommendations:
+        recommendations.append({
+            'type': 'success',
+            'icon': '✅',
+            'title': 'Budget Healthy',
+            'message': 'Your budget allocation looks good! All categories are on track.',
+            'action': 'Continue monitoring spending patterns regularly.'
+        })
+    
+    # Weekly spending trend (last 8 weeks)
+    eight_weeks_ago = datetime.now().date() - timedelta(weeks=8)
+    weekly_spending = Transaction.objects.filter(
+        approved=True,
+        amount__lt=0,
+        date__gte=eight_weeks_ago
+    ).annotate(
+        week=TruncWeek('date')
+    ).values('week').annotate(
+        total=Sum('amount')
+    ).order_by('week')
+    
+    spending_trend_labels = [item['week'].strftime('%b %d') for item in weekly_spending]
+    spending_trend_values = [abs(float(item['total'])) for item in weekly_spending]
+    
+    context = {
+        'is_treasurer': user_is_treasurer,
+        'total_income': total_income,
+        'total_spent': total_spent,
+        'remaining_funds': remaining_funds,
+        'daily_burn_rate': round(daily_burn_rate, 2),
+        'weekly_burn_rate': round(weekly_burn_rate, 2),
+        'monthly_burn_rate': round(monthly_burn_rate, 2),
+        'runway_days': runway_days,
+        'category_insights': category_insights,
+        'recommendations': recommendations,
+        'total_suggested_budget': round(total_suggested_budget, 2),
+        'additional_funds_needed': round(additional_funds_needed, 2),
+        'spending_trend_labels': json.dumps(spending_trend_labels),
+        'spending_trend_values': json.dumps(spending_trend_values),
+    }
+    
+    return render(request, 'tedx_finance/budget_suggestions.html', context)
 @login_required
 def transactions_table(request):
     """Excel-like table view with inline editing capabilities"""
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
     transactions = Transaction.objects.all().order_by('-date')
     
+    # Dynamic categories merged with defaults for filters
+    try:
+        dynamic = list(Category.objects.all().values_list('name', 'name'))
+    except Exception:
+        dynamic = []
+    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+    seen = set()
+    categories = []
+    for val, label in dynamic + default_choices:
+        if val not in seen:
+            categories.append((val, label))
+            seen.add(val)
+
     context = {
         'transactions': transactions,
-        'categories': Transaction.CATEGORY_CHOICES,
+        'categories': categories,
         'is_treasurer': user_is_treasurer,
     }
     return render(request, 'tedx_finance/transactions_table.html', context)
@@ -141,9 +369,10 @@ def dashboard(request):
         )
 
         # Convert category codes to human labels
-        category_map = dict(Transaction.CATEGORY_CHOICES)
+        category_map = dict(getattr(Transaction, 'CATEGORY_CHOICES', []))
         for item in category_spending:
-            item['category'] = category_map.get(item['category'], 'Unknown')
+            # If not in default map, keep the raw category string (user-defined)
+            item['category'] = category_map.get(item['category'], item['category'])
 
         income_data = [float(management_funds), float(sponsor_funds)]
 
@@ -276,6 +505,7 @@ def export_transactions_pdf(request):
     - Optional date range filtering via GET parameters
     - Includes sponsors with tier classification
     - Shows approved transactions only
+    - Includes proof images for transactions
     - Comprehensive error handling with user-friendly messages
     
     Args:
@@ -289,6 +519,7 @@ def export_transactions_pdf(request):
     from django.http import HttpResponse
     import io
     import logging
+    import os
     
     logger = logging.getLogger(__name__)
     
@@ -393,7 +624,12 @@ def add_transaction(request):
             return redirect('tedx_finance:dashboard')
     else:
         form = TransactionForm(request.user)
-    context = {'form': form, 'form_title': 'Add a New Transaction', 'form_button': 'Save Transaction'}
+    context = {
+        'form': form,
+        'form_title': 'Add a New Transaction',
+        'form_button': 'Save Transaction',
+        'is_treasurer': is_in_group(request.user, 'Treasurer'),
+    }
     return render(request, 'tedx_finance/add_transaction.html', context)
 
 @permission_required('tedx_finance.change_transaction', raise_exception=True)
@@ -688,6 +924,196 @@ def export_transactions_xlsx(request):
         return redirect('tedx_finance:dashboard')
 
 
+@login_required
+def export_transactions_with_proofs(request):
+    """
+    Export approved transactions as Excel + all proof images in a ZIP file.
+    
+    Features:
+    - Includes Excel report with transaction data
+    - Bundles all proof images organized by transaction
+    - Optional date range filtering
+    - Creates organized folder structure: proofs/TransactionTitle_Date/
+    
+    Args:
+        request: HTTP request with optional start_date and end_date GET parameters
+        
+    Returns:
+        HttpResponse with ZIP attachment containing Excel + proof images
+    """
+    import logging
+    import zipfile
+    import io
+    import os
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from openpyxl.utils import get_column_letter
+    from django.core.files.storage import default_storage
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Parse optional filters
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        start_date = parse_date(start_date_str)
+        end_date = parse_date(end_date_str)
+
+        # Query approved transactions
+        transactions = Transaction.objects.filter(approved=True)
+        if start_date:
+            transactions = transactions.filter(date__gte=start_date)
+        if end_date:
+            transactions = transactions.filter(date__lte=end_date)
+        transactions = transactions.order_by('date')
+        
+        if not transactions.exists():
+            messages.warning(request, '⚠️ No approved transactions found for the selected date range.')
+            return redirect('tedx_finance:transactions_table')
+        
+        # Create in-memory ZIP file
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # --- 1. Create Excel report ---
+            workbook = openpyxl.Workbook()
+            worksheet = workbook.active
+            worksheet.title = 'Transactions'
+            
+            # Header row with styling
+            columns = ['Date', 'Title', 'Category', 'Amount', 'Submitted By', 'Proof File']
+            worksheet.append(columns)
+            
+            # Style header row
+            header_fill = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid')
+            header_font = Font(bold=True, color='FFFFFF', size=12)
+            for col_num, column_title in enumerate(columns, 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+            
+            # Data rows with proof file references
+            for tx in transactions:
+                proof_filename = ''
+                if tx.proof:
+                    proof_filename = os.path.basename(tx.proof.name)
+                
+                row = [
+                    tx.date,
+                    tx.title,
+                    tx.get_category_display(),
+                    float(tx.amount),
+                    tx.created_by.username if tx.created_by else 'N/A',
+                    proof_filename or 'No proof uploaded'
+                ]
+                worksheet.append(row)
+            
+            # Auto-adjust column widths
+            for col_num, column_cells in enumerate(worksheet.columns, 1):
+                max_length = 0
+                column = get_column_letter(col_num)
+                for cell in column_cells:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column].width = adjusted_width
+            
+            # Add summary row
+            row_count = worksheet.max_row
+            total_amount = sum(float(tx.amount) for tx in transactions)
+            summary_row = [
+                '',
+                '',
+                'TOTAL',
+                total_amount,
+                f'{transactions.count()} transactions',
+                ''
+            ]
+            worksheet.append(summary_row)
+            
+            # Style summary row
+            summary_fill = PatternFill(start_color='E5E7EB', end_color='E5E7EB', fill_type='solid')
+            summary_font = Font(bold=True)
+            for col_num in range(1, 7):
+                cell = worksheet.cell(row=row_count + 1, column=col_num)
+                cell.fill = summary_fill
+                cell.font = summary_font
+            
+            # Save Excel to buffer
+            excel_buffer = io.BytesIO()
+            workbook.save(excel_buffer)
+            excel_buffer.seek(0)
+            
+            # Add Excel to ZIP
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            zip_file.writestr(f'tedx_transactions_{timestamp}.xlsx', excel_buffer.read())
+            
+            # --- 2. Add proof images to ZIP ---
+            proofs_added = 0
+            for tx in transactions:
+                if tx.proof:
+                    try:
+                        # Create organized folder structure
+                        safe_title = "".join(c for c in tx.title if c.isalnum() or c in (' ', '-', '_')).strip()
+                        folder_name = f"proofs/{safe_title}_{tx.date}"
+                        file_extension = os.path.splitext(tx.proof.name)[1]
+                        proof_path = f"{folder_name}/proof{file_extension}"
+                        
+                        # Read proof file and add to ZIP
+                        if default_storage.exists(tx.proof.name):
+                            with default_storage.open(tx.proof.name, 'rb') as proof_file:
+                                zip_file.writestr(proof_path, proof_file.read())
+                                proofs_added += 1
+                    except Exception as e:
+                        logger.warning(f"Could not add proof for transaction {tx.id}: {str(e)}")
+            
+            # Add a README file
+            readme_content = f"""TEDx Finance Report with Proofs
+=====================================
+
+Export Date: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+Date Range: {start_date or 'All'} to {end_date or 'All'}
+
+Contents:
+---------
+1. tedx_transactions_{timestamp}.xlsx - Full transaction report
+2. proofs/ folder - {proofs_added} proof images organized by transaction
+
+File Structure:
+---------------
+proofs/
+  ├── TransactionTitle_Date/
+  │   └── proof.jpg (or .pdf, .png, etc.)
+  └── ...
+
+Notes:
+------
+- Only approved transactions are included
+- Proof images are organized by transaction title and date
+- If a transaction has no proof, it won't appear in the proofs folder
+- All amounts are in Indian Rupees (₹)
+
+For questions, contact the TEDx Finance Team.
+"""
+            zip_file.writestr('README.txt', readme_content)
+        
+        # Prepare ZIP response
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="tedx_report_with_proofs_{timestamp}.zip"'
+        
+        messages.success(request, f'✅ Exported {transactions.count()} transactions with {proofs_added} proof files!')
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting ZIP with proofs: {str(e)}", exc_info=True)
+        messages.error(request, f'❌ Failed to export ZIP file: {str(e)}')
+        return redirect('tedx_finance:dashboard')
+
+
 @permission_required('tedx_finance.add_transaction', raise_exception=True)
 def import_transactions(request):
     """
@@ -732,11 +1158,12 @@ def import_transactions(request):
                             errors.append({'row': idx, 'message': 'Missing title or category'})
                             continue
                         
-                        # Validate category
-                        valid_categories = [c[0] for c in Transaction.CATEGORY_CHOICES]
-                        if category not in valid_categories:
-                            errors.append({'row': idx, 'message': f'Invalid category: {category}'})
-                            continue
+                        # Ensure category exists in Category table (create if missing)
+                        if category:
+                            try:
+                                Category.objects.get_or_create(name=category)
+                            except Exception:
+                                pass
                         
                         # Find or default user
                         user = None
@@ -769,9 +1196,145 @@ def import_transactions(request):
             except Exception as e:
                 messages.error(request, f'Error reading file: {e}')
     
+    try:
+        dynamic = list(Category.objects.all().values_list('name', 'name'))
+    except Exception:
+        dynamic = []
+    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+    seen = set()
+    categories = []
+    for val, label in dynamic + default_choices:
+        if val not in seen:
+            categories.append((val, label))
+            seen.add(val)
+
     context = {
-        'categories': Transaction.CATEGORY_CHOICES,
+        'categories': categories,
         'report': report,
     }
     return render(request, 'tedx_finance/import_transactions.html', context)
+
+
+@login_required
+def manage_categories(request):
+    """Simple manager to add/remove custom categories (Treasurer only)."""
+    user_is_treasurer = is_in_group(request.user, 'Treasurer')
+    if not user_is_treasurer:
+        messages.error(request, 'Only treasurers can manage categories.')
+        return redirect('tedx_finance:dashboard')
+
+    # Add new category
+    if request.method == 'POST':
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            messages.error(request, 'Category name cannot be empty.')
+        elif len(name) > 50:
+            messages.error(request, 'Category name must be 50 characters or fewer.')
+        else:
+            obj, created = Category.objects.get_or_create(name=name)
+            if created:
+                messages.success(request, f'Category "{name}" added.')
+            else:
+                messages.info(request, f'Category "{name}" already exists.')
+        return redirect('tedx_finance:manage_categories')
+
+    # Delete category
+    delete_id = request.GET.get('delete')
+    if delete_id:
+        try:
+            cat = Category.objects.get(id=delete_id)
+            cat.delete()
+            messages.warning(request, f'Category "{cat.name}" deleted.')
+            return redirect('tedx_finance:manage_categories')
+        except Category.DoesNotExist:
+            messages.error(request, 'Category not found.')
+
+    categories = Category.objects.all()
+    return render(request, 'tedx_finance/manage_categories.html', {
+        'categories': categories,
+        'is_treasurer': user_is_treasurer,
+    })
+
+
+@login_required
+def quick_add_category(request):
+    """AJAX: quick add a new Category (Treasurer only)."""
+    if not is_in_group(request.user, 'Treasurer'):
+        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+    import json
+    try:
+        data = json.loads(request.body or '{}')
+        name = (data.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Name is required'}, status=400)
+        if len(name) > 50:
+            return JsonResponse({'success': False, 'error': 'Name must be <= 50 chars'}, status=400)
+        cat, created = Category.objects.get_or_create(name=name)
+        # Build merged categories list (dynamic + defaults) preserving order
+        try:
+            dynamic = list(Category.objects.all().values_list('name', 'name'))
+        except Exception:
+            dynamic = []
+        default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+        seen = set()
+        merged = []
+        for val, label in dynamic + default_choices:
+            if val not in seen:
+                merged.append({'value': val, 'label': label})
+                seen.add(val)
+        return JsonResponse({'success': True, 'id': cat.id, 'name': cat.name, 'categories': merged})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def quick_rename_category(request):
+    """AJAX: rename a Category and cascade to Transaction.category strings (Treasurer only)."""
+    if not is_in_group(request.user, 'Treasurer'):
+        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+    import json
+    try:
+        data = json.loads(request.body or '{}')
+        cat_id = data.get('id')
+        old_name = (data.get('old_name') or '').strip()
+        new_name = (data.get('new_name') or '').strip()
+        if not new_name:
+            return JsonResponse({'success': False, 'error': 'New name is required'}, status=400)
+        if len(new_name) > 50:
+            return JsonResponse({'success': False, 'error': 'Name must be <= 50 chars'}, status=400)
+        # Check conflict
+        if Category.objects.filter(name=new_name).exclude(id=cat_id).exists():
+            return JsonResponse({'success': False, 'error': 'Category with this name already exists'}, status=409)
+        cat = None
+        if cat_id:
+            cat = Category.objects.filter(id=cat_id).first()
+        if not cat and old_name:
+            cat, _ = Category.objects.get_or_create(name=old_name)
+        if not cat:
+            return JsonResponse({'success': False, 'error': 'Category not found'}, status=404)
+        # Rename
+        prev_name = cat.name
+        cat.name = new_name
+        cat.save()
+        # Update Transaction rows that used the old string value
+        Transaction.objects.filter(category=prev_name).update(category=new_name)
+        # Build merged list
+        try:
+            dynamic = list(Category.objects.all().values_list('name', 'name'))
+        except Exception:
+            dynamic = []
+        default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+        seen = set()
+        merged = []
+        for val, label in dynamic + default_choices:
+            if val not in seen:
+                merged.append({'value': val, 'label': label})
+                seen.add(val)
+        return JsonResponse({'success': True, 'id': cat.id, 'name': cat.name, 'categories': merged})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 

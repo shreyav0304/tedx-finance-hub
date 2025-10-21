@@ -1,0 +1,363 @@
+{% extends 'tedx_finance/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Budget Predictions & Suggestions - TEDx Finance{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 slide-in-left">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-3">
+                💡 Budget Intelligence
+            </h1>
+            <p class="text-slate-400 text-lg">
+                AI-powered predictions and recommendations for your event budget
+            </p>
+        </div>
+
+        <!-- Financial Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 slide-in-right" style="animation-delay: 0.1s;">
+            <!-- Total Funds -->
+            <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-green-400 text-sm font-semibold">Total Income</span>
+                    <span class="text-3xl">💰</span>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">₹{{ total_income|floatformat:0|intcomma }}</div>
+                <div class="text-sm text-green-300">Available funds</div>
+            </div>
+
+            <!-- Total Spent -->
+            <div class="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-sm border border-orange-500/30 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-orange-400 text-sm font-semibold">Total Spent</span>
+                    <span class="text-3xl">📊</span>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">₹{{ total_spent|floatformat:0|intcomma }}</div>
+                <div class="text-sm text-orange-300">{{ total_spent|floatformat:1 }}% of income</div>
+            </div>
+
+            <!-- Remaining -->
+            <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 backdrop-blur-sm border border-cyan-500/30 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-cyan-400 text-sm font-semibold">Remaining</span>
+                    <span class="text-3xl">💵</span>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">₹{{ remaining_funds|floatformat:0|intcomma }}</div>
+                <div class="text-sm text-cyan-300">Available balance</div>
+            </div>
+
+            <!-- Runway -->
+            <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-purple-400 text-sm font-semibold">Runway</span>
+                    <span class="text-3xl">⏱️</span>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">
+                    {% if runway_days >= 999 %}
+                    ∞
+                    {% else %}
+                    {{ runway_days }}
+                    {% endif %}
+                </div>
+                <div class="text-sm text-purple-300">
+                    {% if runway_days >= 999 %}
+                    No spending yet
+                    {% else %}
+                    days remaining
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Burn Rate Analysis -->
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 mb-8 slide-in-left" style="animation-delay: 0.2s;">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-4xl">🔥</span>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Burn Rate Analysis</h2>
+                    <p class="text-slate-400">Your current spending velocity</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-700/30 rounded-xl p-5 border border-slate-600">
+                    <div class="text-slate-400 text-sm mb-2">Daily Burn Rate</div>
+                        <div class="text-2xl font-bold text-orange-400">₹{{ daily_burn_rate|floatformat:0|intcomma }}</div>
+                    <div class="text-xs text-slate-500 mt-1">per day</div>
+                </div>
+                    <div class="bg-slate-700/30 rounded-xl p-5 border border-slate-600">
+                    <div class="text-slate-400 text-sm mb-2">Weekly Burn Rate</div>
+                    <div class="text-2xl font-bold text-orange-400">₹{{ weekly_burn_rate|floatformat:0|intcomma }}</div>
+                    <div class="text-xs text-slate-500 mt-1">per week</div>
+                </div>
+                    <div class="bg-slate-700/30 rounded-xl p-5 border border-slate-600">
+                    <div class="text-slate-400 text-sm mb-2">Monthly Burn Rate</div>
+                    <div class="text-2xl font-bold text-orange-400">₹{{ monthly_burn_rate|floatformat:0|intcomma }}</div>
+                    <div class="text-xs text-slate-500 mt-1">per month</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        {% if recommendations %}
+        <div class="mb-8 slide-in-right" style="animation-delay: 0.3s;">
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                <span>🎯</span> Recommendations
+            </h2>
+            <div class="space-y-4">
+                {% for rec in recommendations %}
+                <div class="bg-slate-800/50 backdrop-blur-sm border 
+                    {% if rec.type == 'critical' %}border-red-500/50 bg-red-500/10
+                    {% elif rec.type == 'warning' %}border-yellow-500/50 bg-yellow-500/10
+                    {% elif rec.type == 'success' %}border-green-500/50 bg-green-500/10
+                    {% else %}border-blue-500/50 bg-blue-500/10{% endif %}
+                    rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">{{ rec.icon }}</span>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-white mb-2">{{ rec.title }}</h3>
+                            <p class="text-slate-300 mb-3">{{ rec.message }}</p>
+                            <div class="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                                <div class="text-sm font-semibold text-cyan-400 mb-1">💡 Action Required:</div>
+                                <div class="text-sm text-slate-300">{{ rec.action }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Category-wise Budget Analysis -->
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 mb-8 slide-in-left" style="animation-delay: 0.4s;">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <span>📊</span> Category-wise Predictions
+            </h2>
+
+            {% if category_insights %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm">Category</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Current Budget</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Spent</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Utilization</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Daily Burn</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Predicted Total</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm">Suggested Budget</th>
+                            <th class="text-center py-3 px-4 text-slate-400 font-semibold text-sm">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for insight in category_insights %}
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+                            <td class="py-4 px-4">
+                                <span class="font-semibold text-white">{{ insight.category }}</span>
+                                <div class="text-xs text-slate-500 mt-1">{{ insight.days_remaining }} days left</div>
+                            </td>
+                            <td class="py-4 px-4 text-right text-slate-300">₹{{ insight.current_budget|floatformat:0|intcomma }}</td>
+                            <td class="py-4 px-4 text-right text-orange-400 font-semibold">₹{{ insight.spent|floatformat:0|intcomma }}</td>
+                            <td class="py-4 px-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <div class="w-20 bg-slate-700 rounded-full h-2 overflow-hidden">
+                                        <div class="h-full 
+                                            {% if insight.utilization >= 100 %}bg-red-500
+                                            {% elif insight.utilization >= 80 %}bg-yellow-500
+                                            {% else %}bg-green-500{% endif %}"
+                                            style="width: {{ insight.utilization|floatformat:0 }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold
+                                        {% if insight.utilization >= 100 %}text-red-400
+                                        {% elif insight.utilization >= 80 %}text-yellow-400
+                                        {% else %}text-green-400{% endif %}">
+                                        {{ insight.utilization }}%
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-4 text-right text-slate-300">₹{{ insight.daily_burn_rate|floatformat:0|intcomma }}</td>
+                            <td class="py-4 px-4 text-right">
+                                <span class="font-semibold {% if insight.predicted_total_spend > insight.current_budget %}text-red-400{% else %}text-cyan-400{% endif %}">
+                                    ₹{{ insight.predicted_total_spend|floatformat:0|intcomma }}
+                                </span>
+                            </td>
+                            <td class="py-4 px-4 text-right">
+                                <span class="font-bold text-purple-400">₹{{ insight.suggested_budget|floatformat:0|intcomma }}</span>
+                                {% if insight.needs_increase %}
+                                <div class="text-xs text-red-400 mt-1">+₹{{ insight.budget_shortage|floatformat:0|intcomma }} needed</div>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-4 text-center">
+                                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold
+                                    {% if insight.status == 'exceeded' %}bg-red-500/20 text-red-400 border border-red-500/50
+                                    {% elif insight.status == 'warning' %}bg-yellow-500/20 text-yellow-400 border border-yellow-500/50
+                                    {% elif insight.status == 'moderate' %}bg-blue-500/20 text-blue-400 border border-blue-500/50
+                                    {% else %}bg-green-500/20 text-green-400 border border-green-500/50{% endif %}">
+                                    {% if insight.status == 'exceeded' %}Critical
+                                    {% elif insight.status == 'warning' %}Warning
+                                    {% elif insight.status == 'moderate' %}Moderate
+                                    {% else %}Healthy{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-slate-700/50 font-bold">
+                            <td class="py-4 px-4 text-white">TOTAL</td>
+                            <td class="py-4 px-4 text-right text-white">-</td>
+                            <td class="py-4 px-4 text-right text-orange-400">₹{{ total_spent|floatformat:0|intcomma }}</td>
+                            <td class="py-4 px-4 text-right">-</td>
+                            <td class="py-4 px-4 text-right">-</td>
+                            <td class="py-4 px-4 text-right text-cyan-400">-</td>
+                            <td class="py-4 px-4 text-right text-purple-400">₹{{ total_suggested_budget|floatformat:0|intcomma }}</td>
+                            <td class="py-4 px-4 text-center">-</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <span class="text-6xl mb-4 block">📊</span>
+                <p class="text-slate-400 text-lg">No budget data available yet. Create budgets to see predictions.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Spending Trend Chart -->
+        <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 mb-8 slide-in-right" style="animation-delay: 0.5s;">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <span>📈</span> Weekly Spending Trend
+            </h2>
+            <div class="h-80">
+                <canvas id="spendingTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Additional Funds Needed Summary -->
+        {% if additional_funds_needed > 0 %}
+        <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/40 rounded-2xl p-8 text-center slide-in-left" style="animation-delay: 0.6s;">
+            <span class="text-6xl mb-4 block">💸</span>
+            <h2 class="text-3xl font-bold text-white mb-3">Additional Funding Required</h2>
+            <div class="text-5xl font-bold text-purple-400 mb-4">₹{{ additional_funds_needed|floatformat:0|intcomma }}</div>
+            <p class="text-slate-300 text-lg max-w-2xl mx-auto">
+                Based on current spending trends and projected needs, you should secure this amount to safely complete your event with a 20% buffer.
+            </p>
+        </div>
+        {% else %}
+        <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/40 rounded-2xl p-8 text-center slide-in-left" style="animation-delay: 0.6s;">
+            <span class="text-6xl mb-4 block">✅</span>
+            <h2 class="text-3xl font-bold text-white mb-3">Budget Fully Funded!</h2>
+            <p class="text-slate-300 text-lg max-w-2xl mx-auto">
+                You have sufficient funds to complete the event based on current projections. Keep monitoring your spending to stay on track!
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Spending Trend Chart
+const trendCtx = document.getElementById('spendingTrendChart').getContext('2d');
+const isLight = document.documentElement.classList.contains('light-theme');
+const axisColor = isLight ? '#334155' : '#94A3B8';
+const gridColor = isLight ? '#E2E8F0' : '#334155';
+const legendColor = isLight ? '#0F172A' : '#E2E8F0';
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ spending_trend_labels|safe }},
+        datasets: [{
+            label: 'Weekly Spending',
+            data: {{ spending_trend_values|safe }},
+            borderColor: '#F97316',
+            backgroundColor: isLight ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#F97316',
+            pointBorderColor: '#FFF',
+            pointBorderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                labels: { color: legendColor, font: { size: 14 } }
+            },
+            tooltip: {
+                backgroundColor: isLight ? '#FFFFFF' : '#1E293B',
+                titleColor: isLight ? '#0F172A' : '#E2E8F0',
+                bodyColor: isLight ? '#334155' : '#CBD5E1',
+                borderColor: isLight ? '#E2E8F0' : '#475569',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return '₹' + context.parsed.y.toLocaleString('en-IN');
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: axisColor,
+                    callback: function(value) {
+                        return '₹' + value.toLocaleString('en-IN');
+                    }
+                },
+                grid: { color: gridColor }
+            },
+            x: {
+                ticks: { color: axisColor },
+                grid: { color: gridColor }
+            }
+        }
+    }
+});
+</script>
+
+<style>
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.6s ease-out forwards;
+}
+</style>
+{% endblock %}

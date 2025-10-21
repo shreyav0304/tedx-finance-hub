@@ -10,6 +10,7 @@ urlpatterns = [
     # Main dashboard
     path('', views.dashboard, name='dashboard'),
     path('budgets/', views.budgets, name='budgets'),
+    path('budget-suggestions/', views.budget_suggestions, name='budget_suggestions'),
     
     # Transactions table view
     path('transactions/', views.transactions_table, name='transactions_table'),
@@ -22,6 +23,9 @@ urlpatterns = [
     path('transactions/bulk-approve/', views.bulk_approve_transactions, name='bulk_approve_transactions'),
     path('transactions/bulk-reject/', views.bulk_reject_transactions, name='bulk_reject_transactions'),
     path('import/', views.import_transactions, name='import_transactions'),
+    path('categories/', views.manage_categories, name='manage_categories'),
+    path('categories/quick-add', views.quick_add_category, name='quick_add_category'),
+    path('categories/quick-rename', views.quick_rename_category, name='quick_rename_category'),
 
     # Income forms
     path('add-fund/', views.add_management_fund, name='add_management_fund'),
@@ -34,6 +38,7 @@ urlpatterns = [
     # Export URLs
     path('export/excel/', views.export_transactions_xlsx, name='export_xlsx'),
     path('export/pdf/', views.export_transactions_pdf, name='export_pdf'),
+    path('export/zip/', views.export_transactions_with_proofs, name='export_zip'),
     path('report/', views.finance_report, name='finance_report'),
     # path('export/pdf/', views.export_transactions_pdf, name='export_pdf'), # Temporarily disabled
 ]

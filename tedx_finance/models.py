@@ -2,6 +2,17 @@ from django.db import models
 from django.contrib.auth.models import User
 from simple_history.models import HistoricalRecords
 
+class Category(models.Model):
+    """User-defined transaction categories."""
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
 class ManagementFund(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date_received = models.DateField()
@@ -52,19 +63,21 @@ class Transaction(models.Model):
 
 class Budget(models.Model):
     """Budget tracking per category with alerts when exceeded."""
-    category = models.CharField(max_length=50, choices=Transaction.CATEGORY_CHOICES, unique=True)
+    # Link budgets to the dynamic Category model so new/custom categories can have budgets
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Planned budget amount")
     start_date = models.DateField(help_text="Budget period start")
     end_date = models.DateField(help_text="Budget period end")
     
     def __str__(self):
-        return f"{self.get_category_display()} Budget ({self.start_date} to {self.end_date})"
+        return f"{self.category.name} Budget ({self.start_date} to {self.end_date})"
     
     def spent(self):
         """Calculate total approved spending within budget period for this category."""
         from django.db.models import Sum
         spent_val = Transaction.objects.filter(
-            category=self.category,
+            # Transactions still store category as a string name
+            category=self.category.name,
             approved=True,
             amount__lt=0,
             date__gte=self.start_date,

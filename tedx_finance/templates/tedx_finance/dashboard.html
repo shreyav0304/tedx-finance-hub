@@ -14,171 +14,307 @@
 
 {% else %}
 <!-- HEADER -->
-<header class="mb-12">
-    <!-- Title Section -->
-    <div class="mb-8 slide-in-left">
-        <h1 class="text-5xl lg:text-6xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-transparent bg-clip-text mb-3">
-            TEDx Finance Hub
-        </h1>
-        <p class="text-slate-400 text-lg">
-            Welcome back, <span class="text-white font-bold">{{ user.username }}</span>! 👋
-        </p>
+<header class="mb-8">
+    <!-- Title Section with Quick Stats -->
+    <div class="mb-6 slide-in-left">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div>
+                <h1 class="text-4xl lg:text-5xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 text-transparent bg-clip-text mb-2">
+                    TEDx Finance Hub
+                </h1>
+                <p class="text-slate-400 text-base flex items-center gap-2">
+                    <span class="text-2xl">👋</span>
+                    Welcome back, <span class="text-white font-bold">{{ user.username }}</span>!
+                    {% if is_treasurer %}
+                    <span class="ml-2 px-2 py-0.5 bg-indigo-600 text-white text-xs rounded-full font-semibold">TREASURER</span>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- Quick Stats Pills -->
+            <div class="flex flex-wrap gap-2">
+                <div class="px-4 py-2 bg-green-900/30 border border-green-700 rounded-full flex items-center gap-2" title="Total Income">
+                    <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <span class="text-green-400 text-sm font-bold">₹{{ total_income|floatformat:0 }}</span>
+                </div>
+                <div class="px-4 py-2 bg-red-900/30 border border-red-700 rounded-full flex items-center gap-2" title="Total Spent">
+                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                    </svg>
+                    <span class="text-red-400 text-sm font-bold">₹{{ total_spent|floatformat:0 }}</span>
+                </div>
+                <div class="px-4 py-2 bg-cyan-900/30 border border-cyan-700 rounded-full flex items-center gap-2" title="Net Balance">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-cyan-400 text-sm font-bold">₹{{ net_balance|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Date Range Filter - Full Width Card -->
-    <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 backdrop-blur-sm mb-6 slide-in-right">
+    <!-- Date Range Filter - Compact Card with Instructions -->
+    <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 backdrop-blur-sm mb-6 slide-in-right hover:border-slate-600 transition-colors">
+        <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+            <h3 class="text-white font-bold text-sm">Filter by Date Range</h3>
+            <span class="text-xs text-slate-500 ml-auto hidden sm:block">Select dates to filter all data below</span>
+        </div>
         <form method="get" class="flex flex-wrap items-end gap-4">
-            <div class="flex-1 min-w-[200px]">
+            <div class="flex-1 min-w-[180px]">
                 <label for="start_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">
-                    📅 Start Date
+                    📅 From
                 </label>
                 <input type="date" id="start_date" name="start_date" value="{{ start_date }}"
-                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full">
+                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full hover:border-slate-600"
+                       placeholder="Start date">
             </div>
-            <div class="flex-1 min-w-[200px]">
+            <div class="flex-1 min-w-[180px]">
                 <label for="end_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">
-                    📅 End Date
+                    📅 To
                 </label>
                 <input type="date" id="end_date" name="end_date" value="{{ end_date }}"
-                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full">
+                       class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full hover:border-slate-600"
+                       placeholder="End date">
             </div>
-            <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold px-6 py-2.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 shadow-lg hover:shadow-indigo-500/50 whitespace-nowrap">
+            <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold px-6 py-2.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 shadow-lg hover:shadow-indigo-500/50 whitespace-nowrap flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
                 Apply Filter
             </button>
             {% if start_date or end_date %}
-            <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-400 hover:text-white text-sm px-4 py-2.5 hover:bg-slate-700 rounded-lg transition-all font-medium whitespace-nowrap">
-                ✕ Clear
+            <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-400 hover:text-white text-sm px-4 py-2.5 hover:bg-slate-700 rounded-lg transition-all font-medium whitespace-nowrap flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Clear Filter
             </a>
             {% endif %}
         </form>
     </div>
 
-    <!-- Action Buttons - Clean 2x2 Grid -->
-    <div class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 slide-in-right" style="animation-delay: 0.1s">
+    <!-- Quick Action Buttons with Tooltips -->
+    <div class="mb-4">
+        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Quick Actions
+        </h3>
+    <div class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 slide-in-right" style="animation-delay: 0.1s; position: relative; z-index: 10;">
         <!-- Add Expense -->
         <a href="{% url 'tedx_finance:add_transaction' %}"
-           class="bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-red-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-red-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-red-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-red-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-red-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="Add a new transaction (expense or income)">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            <span class="text-sm font-bold">Add Expense</span>
+            <span class="text-sm font-bold relative z-10">Add Expense</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Record spending</span>
         </a>
         
         <!-- View Transactions -->
         <a href="{% url 'tedx_finance:transactions_table' %}"
-           class="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-purple-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-lg hover:shadow-purple-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="View and manage all transactions">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
-            <span class="text-sm font-bold">Transactions</span>
+            <span class="text-sm font-bold relative z-10">Transactions</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Full table view</span>
         </a>
         
         <!-- Add Sponsor / Download Excel -->
         {% if is_treasurer %}
         <a href="{% url 'tedx_finance:add_sponsor' %}"
-           class="bg-blue-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-blue-700 transition-all hover:scale-105 shadow-lg hover:shadow-blue-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-blue-600 to-cyan-600 text-white font-bold py-5 px-6 rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all hover:scale-105 shadow-lg hover:shadow-blue-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="Add a new sponsor with agreement">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
             </svg>
-            <span class="text-sm font-bold">Add Sponsor</span>
+            <span class="text-sm font-bold relative z-10">Add Sponsor</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Track funding</span>
         </a>
         {% else %}
         <a href="{% url 'tedx_finance:export_xlsx' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
-           class="bg-green-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-green-700 transition-all hover:scale-105 shadow-lg hover:shadow-green-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-green-600 to-emerald-600 text-white font-bold py-5 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all hover:scale-105 shadow-lg hover:shadow-green-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="Download Excel report with current filter">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span class="text-sm font-bold">Excel Report</span>
+            <span class="text-sm font-bold relative z-10">Excel Report</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Quick download</span>
         </a>
         {% endif %}
         
         <!-- Add Fund / View Report -->
         {% if is_treasurer %}
         <a href="{% url 'tedx_finance:add_management_fund' %}"
-           class="bg-slate-600 text-white font-bold py-5 px-6 rounded-xl hover:bg-slate-700 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-slate-600 to-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="Add management fund income">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span class="text-sm font-bold">Add Fund</span>
+            <span class="text-sm font-bold relative z-10">Add Fund</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Record income</span>
         </a>
         {% else %}
         <a href="{% url 'tedx_finance:finance_report' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
-           class="bg-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:bg-slate-600 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-slate-600 to-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:from-slate-700 hover:to-slate-800 transition-all hover:scale-105 shadow-lg hover:shadow-slate-500/50 flex flex-col items-center justify-center gap-2 text-center relative overflow-hidden"
+           title="View detailed financial report">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span class="text-sm font-bold">View Report</span>
+            <span class="text-sm font-bold relative z-10">View Report</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Detailed view</span>
         </a>
         {% endif %}
+    </div>
     </div>
     
     <!-- Export Buttons Row (Treasurers Only) -->
     {% if is_treasurer %}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 slide-in-right pb-32" style="animation-delay: 0.2s;">
+    <div class="mb-4">
+        <h3 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+            </svg>
+            Export & Reports
+        </h3>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 slide-in-right pb-32" style="animation-delay: 0.2s; position: relative; z-index: 5;">
         <!-- Export Dropdown Button -->
-        <div class="relative inline-block text-left" style="z-index: 9999;">
-            <button id="exportDropdownBtn" type="button" class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-purple-500/50 w-full">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="relative inline-block text-left">
+            <button id="exportDropdownBtn" type="button" class="group bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white font-bold py-5 px-6 rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-purple-500/50 w-full relative overflow-hidden"
+                    title="Export financial data in different formats">
+                <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+                <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span class="text-base font-bold">Export Report ▼</span>
+                <span class="text-base font-bold relative z-10">Export Report ▼</span>
+                <span class="text-xs opacity-75 relative z-10 hidden sm:block">3 formats available</span>
             </button>
-            <div id="exportDropdown" class="absolute left-0 mt-3 w-full min-w-[240px] rounded-xl shadow-2xl bg-white dark:bg-slate-800 border-2 border-purple-400 dark:border-purple-600 hidden overflow-hidden" style="z-index: 99999;">
+            <div id="exportDropdown" class="hidden rounded-xl shadow-2xl bg-white dark:bg-slate-800 border-2 border-purple-400 dark:border-purple-600 overflow-auto max-h-96">
+                <div class="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-700">
+                    <p class="text-xs text-purple-900 dark:text-purple-300 font-semibold">Choose Export Format</p>
+                </div>
                 <a href="{% url 'tedx_finance:export_xlsx' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
-                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-green-700 dark:text-green-400 bg-white dark:bg-slate-800 hover:bg-green-100 dark:hover:bg-slate-700 border-b-2 border-slate-200 dark:border-slate-700 transition-all">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-green-700 dark:text-green-400 bg-white dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/10 border-b border-slate-200 dark:border-slate-700 transition-all group">
+                    <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <span>Excel Report</span>
+                    <div class="flex-1">
+                        <div>Excel Report</div>
+                        <div class="text-xs font-normal text-slate-600 dark:text-slate-400">Spreadsheet format</div>
+                    </div>
                 </a>
                 <a href="{% url 'tedx_finance:export_pdf' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
-                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-red-700 dark:text-red-400 bg-white dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-slate-700 transition-all">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-red-700 dark:text-red-400 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/10 border-b border-slate-200 dark:border-slate-700 transition-all group">
+                    <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                     </svg>
-                    <span>PDF Report</span>
+                    <div class="flex-1">
+                        <div>PDF Report</div>
+                        <div class="text-xs font-normal text-slate-600 dark:text-slate-400">Formatted document</div>
+                    </div>
+                </a>
+                <a href="{% url 'tedx_finance:export_zip' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
+                   class="flex items-center gap-3 px-5 py-4 text-base font-bold text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group">
+                    <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <div>ZIP with Proofs 📎</div>
+                        <div class="text-xs font-normal text-slate-600 dark:text-slate-400">Excel + all proof files</div>
+                    </div>
                 </a>
             </div>
             <script>
-                const dropdownBtn = document.getElementById('exportDropdownBtn');
-                const dropdownMenu = document.getElementById('exportDropdown');
-                
-                if (dropdownBtn && dropdownMenu) {
-                    dropdownBtn.addEventListener('click', function(e) {
+                (function() {
+                    const btn = document.getElementById('exportDropdownBtn');
+                    const menu = document.getElementById('exportDropdown');
+                    if (!btn || !menu) return;
+
+                    let isOpen = false;
+
+                    function positionMenu() {
+                        const rect = btn.getBoundingClientRect();
+                        menu.style.position = 'fixed';
+                        menu.style.left = rect.left + 'px';
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                        menu.style.width = Math.max(rect.width, 260) + 'px';
+                        menu.style.zIndex = '9999';
+                    }
+
+                    function open() {
+                        if (isOpen) return;
+                        document.body.appendChild(menu);
+                        positionMenu();
+                        menu.classList.remove('hidden');
+                        menu.style.display = 'block';
+                        isOpen = true;
+                    }
+
+                    function close() {
+                        if (!isOpen) return;
+                        menu.classList.add('hidden');
+                        menu.style.display = 'none';
+                        isOpen = false;
+                    }
+
+                    btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        dropdownMenu.classList.toggle('hidden');
+                        if (isOpen) close(); else open();
                     });
-                    
+
                     document.addEventListener('click', function(e) {
-                        if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
-                            dropdownMenu.classList.add('hidden');
-                        }
+                        if (isOpen && !menu.contains(e.target)) close();
                     });
-                    
-                    // Close dropdown when clicking on a link
-                    dropdownMenu.querySelectorAll('a').forEach(link => {
-                        link.addEventListener('click', function() {
-                            dropdownMenu.classList.add('hidden');
-                        });
+
+                    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+
+                    window.addEventListener('scroll', function() {
+                        if (isOpen) positionMenu();
+                    }, { passive: true });
+
+                    window.addEventListener('resize', function() {
+                        if (isOpen) positionMenu();
                     });
-                }
+                })();
             </script>
         </div>
         
         <a href="{% url 'tedx_finance:finance_report' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date }}{% endif %}{% if start_date and end_date %}&{% endif %}{% if end_date %}end_date={{ end_date }}{% endif %}{% endif %}"
-           class="bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:from-slate-600 hover:via-slate-500 hover:to-slate-600 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-slate-500/50">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-white font-bold py-5 px-6 rounded-xl hover:from-slate-600 hover:via-slate-500 hover:to-slate-600 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-slate-500/50 relative overflow-hidden"
+           title="View detailed financial report">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span class="text-base font-bold">View Report</span>
+            <span class="text-base font-bold relative z-10">View Report</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Detailed overview</span>
         </a>
         <a href="{% url 'tedx_finance:budgets' %}"
-           class="bg-gradient-to-br from-amber-600 via-orange-600 to-amber-600 text-white font-bold py-5 px-6 rounded-xl hover:from-amber-500 hover:via-orange-500 hover:to-amber-500 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-amber-500/50">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group bg-gradient-to-br from-amber-600 via-orange-600 to-amber-600 text-white font-bold py-5 px-6 rounded-xl hover:from-amber-500 hover:via-orange-500 hover:to-amber-500 transition-all hover:scale-105 shadow-xl hover:shadow-2xl flex flex-col items-center justify-center gap-2 text-center focus:outline-none focus:ring-4 focus:ring-amber-500/50 relative overflow-hidden"
+           title="Manage category budgets">
+            <div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors"></div>
+            <svg class="w-8 h-8 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
             </svg>
-            <span class="text-base font-bold">Budgets</span>
+            <span class="text-base font-bold relative z-10">Budgets</span>
+            <span class="text-xs opacity-75 relative z-10 hidden sm:block">Track spending</span>
         </a>
+    </div>
     </div>
     {% endif %}
 </header>
@@ -729,19 +865,19 @@
         return cookieValue;
     }
 
-    // Toggle export dropdown
+    // Legacy helpers (kept no-op-safe). Portal script above handles open/close logic.
     function toggleExportDropdown(event) {
-        event.stopPropagation();
-        const dropdown = document.getElementById('exportDropdown');
-        dropdown.classList.toggle('hidden');
+        if (event) event.stopPropagation();
+        // handled by portal logic above
     }
 
-    // Close dropdown when clicking outside
+    // Safe global close: only hide if click is truly outside of both button and menu
     document.addEventListener('click', function(event) {
         const dropdown = document.getElementById('exportDropdown');
-        if (dropdown && !dropdown.classList.contains('hidden')) {
-            dropdown.classList.add('hidden');
-        }
+        const dropdownBtn = document.getElementById('exportDropdownBtn');
+        if (!dropdown || dropdown.classList.contains('hidden')) return;
+        if (dropdown.contains(event.target) || (dropdownBtn && dropdownBtn.contains(event.target))) return;
+        dropdown.classList.add('hidden');
     });
 </script>
 {% endif %}

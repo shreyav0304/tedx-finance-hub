@@ -1,6 +1,6 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
-from .models import ManagementFund, Sponsor, Transaction, Budget
+from .models import ManagementFund, Sponsor, Transaction, Budget, Category
 
 @admin.register(ManagementFund)
 class ManagementFundAdmin(SimpleHistoryAdmin):
@@ -38,4 +38,10 @@ class BudgetAdmin(admin.ModelAdmin):
     def remaining(self, obj):
         rem = obj.remaining()
         return f"₹{rem:.2f}" if rem >= 0 else f"-₹{abs(rem):.2f}"
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
 
