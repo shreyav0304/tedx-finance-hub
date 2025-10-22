@@ -48,14 +48,14 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
+        Apply
+      </button>
       {% if category_filter or start_date or end_date %}
       <a href="{% url 'tedx_finance:proof_gallery' %}" class="text-slate-400 hover:text-white text-sm px-4 py-2.5 hover:bg-slate-700 rounded-lg transition-all font-medium whitespace-nowrap flex items-center gap-2" aria-label="Clear all filters">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
         Clear
-      </a>
-      {% endif %}
       </a>
       {% endif %}
     </form>
@@ -174,7 +174,7 @@ const transactions = {
     createdBy: "{{ tx.created_by.username|default:'N/A'|escapejs }}",
     proofUrl: "{{ tx.proof.url }}",
     proofName: "{{ tx.proof.name }}",
-    isPdf: {{ tx.proof.name|slice:"-4:"|lower == ".pdf"|yesno:"true,false" }}
+    isPdf: {% if tx.proof.name|slice:"-4:"|lower == ".pdf" %}true{% else %}false{% endif %}
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 };
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {% if tx_id_param %}
 window.addEventListener('DOMContentLoaded', function() {
   const txIdParam = {{ tx_id_param }};
-  if (txIdParam && transactionData[txIdParam]) {
+  if (txIdParam && transactions[txIdParam]) {
     openLightbox(txIdParam);
   }
 });
