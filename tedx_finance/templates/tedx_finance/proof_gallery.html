@@ -1,0 +1,306 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Proof Gallery - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-white">📸 Proof Gallery</h1>
+      <p class="text-slate-400 mt-1">View all transaction receipts and proofs</p>
+    </div>
+    <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition">
+      ← Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 backdrop-blur-sm mb-6 hover:border-slate-600 transition-colors" role="search" aria-label="Proof gallery filters">
+    <div class="flex items-center gap-2 mb-3">
+      <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+      </svg>
+      <h3 class="text-white font-bold text-sm">Filter Proofs</h3>
+    </div>
+    <form method="get" class="flex flex-wrap items-end gap-4" aria-label="Filter proof gallery by category and date range">
+      <div class="flex-1 min-w-[180px]">
+        <label for="category" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">Category</label>
+        <select name="category" id="category" class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full hover:border-slate-600" aria-label="Filter by category">
+          <option value="">All Categories</option>
+          {% for value, label in categories %}
+          <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label for="start_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">From</label>
+        <input type="date" id="start_date" name="start_date" value="{{ start_date }}"
+               class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full hover:border-slate-600"
+               aria-label="Start date for filter">
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label for="end_date" class="block text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">To</label>
+        <input type="date" id="end_date" name="end_date" value="{{ end_date }}"
+               class="bg-slate-900/50 text-white border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all w-full hover:border-slate-600"
+               aria-label="End date for filter">
+      </div>
+      <button type="submit" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold px-6 py-2.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 shadow-lg whitespace-nowrap flex items-center gap-2" aria-label="Apply filters to proof gallery">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      {% if category_filter or start_date or end_date %}
+      <a href="{% url 'tedx_finance:proof_gallery' %}" class="text-slate-400 hover:text-white text-sm px-4 py-2.5 hover:bg-slate-700 rounded-lg transition-all font-medium whitespace-nowrap flex items-center gap-2" aria-label="Clear all filters">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Clear
+      </a>
+      {% endif %}
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Loading Spinner (hidden by default) -->
+  <div id="loadingSpinner" class="hidden mb-8">
+    <div class="flex flex-col items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+      <p class="text-slate-400 mt-4">Loading proofs...</p>
+    </div>
+  </div>
+
+  <!-- Gallery Grid -->
+  <div id="galleryGrid">
+  {% if transactions %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8" role="list" aria-label="Proof thumbnails">
+    {% for tx in transactions %}
+    <div class="group bg-gradient-to-br from-slate-800/60 via-slate-700/70 to-slate-900/80 backdrop-blur-lg shadow-xl border border-slate-700 rounded-2xl p-4 transition-all hover:scale-105 hover:border-indigo-500 hover:shadow-2xl cursor-pointer"
+         onclick="openLightbox({{ tx.id }})"
+         role="listitem"
+         tabindex="0"
+         onkeydown="if(event.key==='Enter'||event.key===' '){openLightbox({{ tx.id }});event.preventDefault();}"
+         aria-label="View proof for {{ tx.title }}, amount ₹{{ tx.amount|floatformat:2 }}, category {{ tx.get_category_display }}, date {{ tx.date }}">
+      <!-- Thumbnail -->
+      <div class="relative overflow-hidden rounded-lg mb-3 bg-slate-900/50 aspect-square flex items-center justify-center">
+        {% if tx.proof.name|slice:"-4:" == ".pdf" or tx.proof.name|slice:"-4:" == ".PDF" %}
+          <!-- PDF Icon -->
+          <div class="flex flex-col items-center justify-center gap-2 text-red-400">
+            <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs font-bold">PDF</span>
+          </div>
+        {% else %}
+          <!-- Image Thumbnail -->
+          <img src="{{ tx.proof.url }}" alt="Proof for {{ tx.title }}"
+               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+               loading="lazy">
+        {% endif %}
+        <!-- Overlay on hover -->
+        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center" aria-hidden="true">
+          <svg class="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Transaction Info -->
+      <div class="space-y-1">
+        <h3 class="text-white font-bold text-sm truncate" title="{{ tx.title }}">{{ tx.title }}</h3>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-400">{{ tx.date }}</span>
+          <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-semibold">{{ tx.get_category_display }}</span>
+        </div>
+        <div class="text-sm font-bold {% if tx.amount < 0 %}text-red-400{% else %}text-green-400{% endif %}">
+          ₹{{ tx.amount|floatformat:2 }}
+        </div>
+        {% if tx.created_by %}
+        <div class="text-xs text-slate-500">by {{ tx.created_by.username }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <!-- Summary -->
+  <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center">
+    <p class="text-slate-400">
+      Showing <span class="text-white font-bold">{{ transactions.count }}</span> proof{{ transactions.count|pluralize }} 
+      {% if category_filter or start_date or end_date %}(filtered){% endif %}
+    </p>
+  </div>
+  
+  {% else %}
+  <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-12 text-center">
+    <svg class="w-20 h-20 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <p class="text-slate-400 text-lg mb-4">No proofs found</p>
+    <p class="text-slate-500 text-sm">
+      {% if category_filter or start_date or end_date %}
+        Try adjusting your filters or <a href="{% url 'tedx_finance:proof_gallery' %}" class="text-indigo-400 hover:text-indigo-300 underline">clear all filters</a>
+      {% else %}
+        Approved transactions with uploaded proof files will appear here
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+  </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightbox" class="fixed inset-0 bg-black/95 z-[9999] hidden flex items-center justify-center p-4" onclick="closeLightbox()" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
+  <button class="absolute top-4 right-4 text-white hover:text-red-400 transition p-2" onclick="closeLightbox()" aria-label="Close proof viewer">
+    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+  
+  <div class="max-w-5xl w-full" onclick="event.stopPropagation()">
+    <div id="lightboxContent" class="bg-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+const transactions = {
+  {% for tx in transactions %}
+  {{ tx.id }}: {
+    title: "{{ tx.title|escapejs }}",
+    amount: "{{ tx.amount }}",
+    date: "{{ tx.date }}",
+    category: "{{ tx.get_category_display|escapejs }}",
+    createdBy: "{{ tx.created_by.username|default:'N/A'|escapejs }}",
+    proofUrl: "{{ tx.proof.url }}",
+    proofName: "{{ tx.proof.name }}",
+    isPdf: {{ tx.proof.name|slice:"-4:"|lower == ".pdf"|yesno:"true,false" }}
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+};
+
+function openLightbox(txId) {
+  const tx = transactions[txId];
+  if (!tx) return;
+  
+  const lightbox = document.getElementById('lightbox');
+  const content = document.getElementById('lightboxContent');
+  
+  let mediaHtml = '';
+  if (tx.isPdf) {
+    mediaHtml = `
+      <div class="aspect-[4/3] bg-slate-900 flex items-center justify-center">
+        <div class="text-center">
+          <svg class="w-24 h-24 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+          <p class="text-white text-lg mb-4">PDF Document</p>
+          <a href="${tx.proofUrl}" target="_blank" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Open PDF
+          </a>
+        </div>
+      </div>
+    `;
+  } else {
+    mediaHtml = `<img src="${tx.proofUrl}" alt="${tx.title}" class="w-full h-auto max-h-[70vh] object-contain">`;
+  }
+  
+  content.innerHTML = `
+    ${mediaHtml}
+    <div class="p-6 bg-slate-800">
+      <h2 id="lightboxTitle" class="text-2xl font-bold text-white mb-3">${tx.title}</h2>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span class="text-slate-400">Date:</span>
+          <span class="text-white font-semibold ml-2">${tx.date}</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Category:</span>
+          <span class="text-purple-400 font-semibold ml-2">${tx.category}</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Amount:</span>
+          <span class="${parseFloat(tx.amount) < 0 ? 'text-red-400' : 'text-green-400'} font-bold ml-2">₹${parseFloat(tx.amount).toFixed(2)}</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Submitted by:</span>
+          <span class="text-white font-semibold ml-2">${tx.createdBy}</span>
+        </div>
+      </div>
+      <div class="mt-4 flex gap-3">
+        <a href="${tx.proofUrl}" download class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-center font-semibold" aria-label="Download proof file for ${tx.title}">
+          Download Proof
+        </a>
+        <button onclick="closeLightbox()" class="flex-1 bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600 transition font-semibold">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+  
+  lightbox.classList.remove('hidden');
+  lightbox.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById('lightbox');
+  lightbox.classList.add('hidden');
+  lightbox.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// Show loading spinner on filter form submission
+document.addEventListener('DOMContentLoaded', function() {
+  const filterForm = document.querySelector('form[method="get"]');
+  if (filterForm) {
+    filterForm.addEventListener('submit', function() {
+      document.getElementById('loadingSpinner').classList.remove('hidden');
+      document.getElementById('galleryGrid').style.opacity = '0.5';
+    });
+  }
+});
+
+// Auto-open lightbox if tx_id parameter is present
+{% if tx_id_param %}
+window.addEventListener('DOMContentLoaded', function() {
+  const txIdParam = {{ tx_id_param }};
+  if (txIdParam && transactionData[txIdParam]) {
+    openLightbox(txIdParam);
+  }
+});
+{% endif %}
+</script>
+
+<style>
+/* Light theme overrides for gallery */
+html.light-theme #lightbox {
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+
+html.light-theme #lightboxContent {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+}
+
+html.light-theme #lightboxContent .bg-slate-800 {
+  background: #F8FAFC !important;
+}
+
+html.light-theme #lightboxContent .text-white {
+  color: #1E293B !important;
+}
+
+html.light-theme #lightboxContent .text-slate-400 {
+  color: #64748B !important;
+}
+</style>
+{% endblock %}

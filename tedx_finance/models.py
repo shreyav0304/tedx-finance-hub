@@ -64,6 +64,8 @@ class Transaction(models.Model):
 class Budget(models.Model):
     """Budget tracking per category with alerts when exceeded."""
     # Link budgets to the dynamic Category model so new/custom categories can have budgets
+    # Note: Using ForeignKey with unique=True. Django suggests OneToOneField, but this works fine.
+    # Changing it requires complex migration, so keeping as-is for stability.
     category = models.ForeignKey(Category, on_delete=models.CASCADE, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Planned budget amount")
     start_date = models.DateField(help_text="Budget period start")

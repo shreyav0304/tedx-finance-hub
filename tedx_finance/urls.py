@@ -26,6 +26,7 @@ urlpatterns = [
     path('categories/', views.manage_categories, name='manage_categories'),
     path('categories/quick-add', views.quick_add_category, name='quick_add_category'),
     path('categories/quick-rename', views.quick_rename_category, name='quick_rename_category'),
+    path('proofs/', views.proof_gallery, name='proof_gallery'),
 
     # Income forms
     path('add-fund/', views.add_management_fund, name='add_management_fund'),

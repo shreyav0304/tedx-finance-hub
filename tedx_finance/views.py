@@ -6,11 +6,15 @@ from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
+import logging
 
 from .models import ManagementFund, Sponsor, Transaction, Category
 from .forms import TransactionForm, ManagementFundForm, SponsorForm
 
 import openpyxl
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 # --- Helper functions ---
@@ -430,7 +434,7 @@ def dashboard(request):
         }
     except Exception as e:
         context['error'] = f"An unexpected error occurred: {e}"
-        print(f"ERROR IN DASHBOARD VIEW: {e}")
+        logger.error(f"Error in dashboard view: {e}", exc_info=True)
 
     return render(request, 'tedx_finance/dashboard.html', context)
 
@@ -1254,6 +1258,60 @@ def manage_categories(request):
         'categories': categories,
         'is_treasurer': user_is_treasurer,
     })
+
+
+@login_required
+def proof_gallery(request):
+    """
+    Gallery view of all transaction proofs with thumbnails and lightbox.
+    Shows only approved transactions with uploaded proof files.
+    Includes filtering by category and date range.
+    """
+    user_is_treasurer = is_in_group(request.user, 'Treasurer')
+    
+    # Parse optional filters
+    category_filter = request.GET.get('category', '')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+    tx_id_param = request.GET.get('tx_id', '')  # For auto-opening specific transaction
+    start_date = parse_date(start_date_str)
+    end_date = parse_date(end_date_str)
+    
+    # Query transactions with proofs
+    transactions = Transaction.objects.filter(approved=True, proof__isnull=False).exclude(proof='')
+    
+    if category_filter:
+        transactions = transactions.filter(category=category_filter)
+    if start_date:
+        transactions = transactions.filter(date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(date__lte=end_date)
+    
+    transactions = transactions.order_by('-date')
+    
+    # Get unique categories for filter dropdown
+    try:
+        dynamic = list(Category.objects.all().values_list('name', 'name'))
+    except Exception:
+        dynamic = []
+    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+    seen = set()
+    categories = []
+    for val, label in dynamic + default_choices:
+        if val not in seen:
+            categories.append((val, label))
+            seen.add(val)
+    
+    context = {
+        'transactions': transactions,
+        'categories': categories,
+        'category_filter': category_filter,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'tx_id_param': tx_id_param,
+        'is_treasurer': user_is_treasurer,
+    }
+    return render(request, 'tedx_finance/proof_gallery.html', context)
 
 
 @login_required

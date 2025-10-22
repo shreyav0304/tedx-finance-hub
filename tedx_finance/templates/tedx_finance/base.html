@@ -1079,6 +1079,11 @@
                            data-nav-link>
                             💡 Predictions
                         </a>
+                        <a href="{% url 'tedx_finance:proof_gallery' %}" 
+                           class="nav-link nav-menu-item px-4 py-2 rounded-lg hover:bg-slate-700"
+                           data-nav-link>
+                            📸 Proofs
+                        </a>
                         
                         <!-- User Menu -->
                         <div class="relative group ml-2">
@@ -1180,6 +1185,12 @@
                                   data-mobile-link
                                   role="menuitem">
                         💡 Predictions
+                    </a>
+                              <a href="{% url 'tedx_finance:proof_gallery' %}" 
+                                  class="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded-lg" 
+                                  data-mobile-link
+                                  role="menuitem">
+                        📸 Proofs
                     </a>
                     <hr class="border-slate-700 my-2">
                     {% if is_treasurer %}
