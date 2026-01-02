@@ -1400,3 +1400,174 @@ def quick_rename_category(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
+
+@login_required
+def export_proofs_to_csv(request):
+    """
+    Export proof gallery data to CSV file.
+    Includes transaction details and proof file URLs.
+    """
+    import csv
+    
+    # Apply same filters as proof_gallery view
+    category_filter = request.GET.get('category', '')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+    start_date = parse_date(start_date_str)
+    end_date = parse_date(end_date_str)
+    
+    transactions = Transaction.objects.filter(approved=True, proof__isnull=False).exclude(proof='')
+    
+    if category_filter:
+        transactions = transactions.filter(category=category_filter)
+    if start_date:
+        transactions = transactions.filter(date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(date__lte=end_date)
+    
+    transactions = transactions.order_by('-date')
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="proof_gallery_{timestamp}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Title', 'Category', 'Amount (₹)', 'Description', 'Proof File'])
+    
+    for tx in transactions:
+        proof_url = request.build_absolute_uri(tx.proof.url) if tx.proof else ''
+        writer.writerow([
+            tx.date.strftime('%Y-%m-%d'),
+            tx.title,
+            tx.category,
+            f"{tx.amount:.2f}",
+            tx.description or '',
+            proof_url
+        ])
+    
+    return response
+
+
+@login_required  
+def export_proofs_to_pdf(request):
+    """
+    Export proof gallery data to PDF file.
+    Creates a formatted PDF report with transaction details.
+    """
+    try:
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+    except ImportError:
+        messages.error(request, 'PDF export requires reportlab library. Please install: pip install reportlab')
+        return redirect('proof_gallery')
+    
+    # Apply same filters as proof_gallery view
+    category_filter = request.GET.get('category', '')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+    start_date = parse_date(start_date_str)
+    end_date = parse_date(end_date_str)
+    
+    transactions = Transaction.objects.filter(approved=True, proof__isnull=False).exclude(proof='')
+    
+    if category_filter:
+        transactions = transactions.filter(category=category_filter)
+    if start_date:
+        transactions = transactions.filter(date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(date__lte=end_date)
+    
+    transactions = transactions.order_by('-date')
+    
+    # Create PDF response
+    response = HttpResponse(content_type='application/pdf')
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="proof_gallery_{timestamp}.pdf"'
+    
+    # Create PDF document
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#DC2626'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph('TEDx Proof Gallery Report', title_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Filters info
+    if category_filter or start_date or end_date:
+        info_style = styles['Normal']
+        filter_text = 'Filters: '
+        filters_applied = []
+        if category_filter:
+            filters_applied.append(f"Category: {category_filter}")
+        if start_date:
+            filters_applied.append(f"From: {start_date.strftime('%Y-%m-%d')}")
+        if end_date:
+            filters_applied.append(f"To: {end_date.strftime('%Y-%m-%d')}")
+        filter_text += ', '.join(filters_applied)
+        elements.append(Paragraph(filter_text, info_style))
+        elements.append(Spacer(1, 0.2*inch))
+    
+    # Table data
+    data = [['Date', 'Title', 'Category', 'Amount (₹)']]
+    total_amount = 0
+    
+    for tx in transactions:
+        data.append([
+            tx.date.strftime('%Y-%m-%d'),
+            tx.title[:30] + '...' if len(tx.title) > 30 else tx.title,
+            tx.category[:20] if tx.category else '',
+            f"₹{tx.amount:,.2f}"
+        ])
+        total_amount += tx.amount
+    
+    # Add total row
+    data.append(['', '', 'Total:', f"₹{total_amount:,.2f}"])
+    
+    # Create table
+    table = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.8*inch, 1.5*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -2), colors.beige),
+        ('GRID', (0, 0), (-1, -2), 1, colors.black),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#FEE2E2')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.HexColor('#DC2626')),
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Footer
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey
+    )
+    elements.append(Paragraph(f'Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', footer_style))
+    elements.append(Paragraph(f'Total Transactions: {len(transactions)}', footer_style))
+    
+    # Build PDF
+    doc.build(elements)
+    return response
+

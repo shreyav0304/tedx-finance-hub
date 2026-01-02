@@ -40,6 +40,8 @@ urlpatterns = [
     path('export/excel/', views.export_transactions_xlsx, name='export_xlsx'),
     path('export/pdf/', views.export_transactions_pdf, name='export_pdf'),
     path('export/zip/', views.export_transactions_with_proofs, name='export_zip'),
+    path('export/proofs-csv/', views.export_proofs_to_csv, name='export_proofs_csv'),
+    path('export/proofs-pdf/', views.export_proofs_to_pdf, name='export_proofs_pdf'),
     path('report/', views.finance_report, name='finance_report'),
     # path('export/pdf/', views.export_transactions_pdf, name='export_pdf'), # Temporarily disabled
 ]

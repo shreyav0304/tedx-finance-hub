@@ -9,9 +9,30 @@
       <h1 class="text-3xl font-bold text-white">📸 Proof Gallery</h1>
       <p class="text-slate-400 mt-1">View all transaction receipts and proofs</p>
     </div>
-    <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition">
-      ← Back to Dashboard
-    </a>
+    <div class="flex gap-2">
+      <!-- Export Buttons -->
+      <div class="relative inline-block">
+        <button onclick="toggleExportMenu()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export
+        </button>
+        <div id="exportMenu" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10">
+          <a href="{% url 'tedx_finance:export_proofs_csv' %}?{{ request.GET.urlencode }}" 
+             class="block px-4 py-2 text-white hover:bg-slate-700 rounded-t-lg transition">
+            📄 Export to CSV
+          </a>
+          <a href="{% url 'tedx_finance:export_proofs_pdf' %}?{{ request.GET.urlencode }}" 
+             class="block px-4 py-2 text-white hover:bg-slate-700 rounded-b-lg transition">
+            📑 Export to PDF
+          </a>
+        </div>
+      </div>
+      <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition">
+        ← Back to Dashboard
+      </a>
+    </div>
   </div>
 
   <!-- Filter Section -->
@@ -256,6 +277,21 @@ function closeLightbox() {
 // Close on Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeLightbox();
+});
+
+// Toggle export menu
+function toggleExportMenu() {
+  const menu = document.getElementById('exportMenu');
+  menu.classList.toggle('hidden');
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(event) {
+  const menu = document.getElementById('exportMenu');
+  const button = event.target.closest('button[onclick="toggleExportMenu()"]');
+  if (!button && !menu.contains(event.target)) {
+    menu.classList.add('hidden');
+  }
 });
 
 // Show loading spinner on filter form submission
