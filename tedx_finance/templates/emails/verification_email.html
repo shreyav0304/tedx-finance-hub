@@ -1,0 +1,17 @@
+<!-- Email verification template -->
+{% autoescape off %}
+Hello {{ user.first_name|default:user.username }},
+
+Welcome to TEDx Finance Hub!
+
+Please verify your email address by clicking the link below:
+
+{{ verification_url }}
+
+This link will expire in 24 hours.
+
+If you did not create this account, please ignore this email.
+
+Best regards,
+TEDx Finance Hub Team
+{% endautoescape %}
