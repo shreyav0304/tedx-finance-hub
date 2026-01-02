@@ -21,8 +21,12 @@ logger = logging.getLogger(__name__)
 def is_in_group(user, group_name):
     """
     Checks if a user is in a given group.
+    Admins (staff users) automatically have access to 'Treasurer' group.
     """
     if user.is_authenticated:
+        # Admins get automatic access to Treasurer group
+        if group_name == 'Treasurer' and user.is_staff:
+            return True
         return user.groups.filter(name=group_name).exists()
     return False
 
