@@ -705,6 +705,78 @@ def dashboard(request):
         else:
             spending_ratio = 0
         
+        # Category Trend Data - Top 3 categories over last 6 months (for trend visualization)
+        last_6_months = datetime.now().date() - timedelta(days=180)
+        
+        # Get top 3 spending categories
+        top_categories_list = list(
+            approved_transactions.filter(amount__lt=0, date__gte=last_6_months)
+            .values('category')
+            .annotate(total=Sum('amount'))
+            .order_by('total')[:3]
+        )
+        
+        category_trend_labels = []
+        category_trend_datasets = []
+        
+        if top_categories_list:
+            # Build trend data for each top category by month
+            for idx, cat_item in enumerate(top_categories_list):
+                cat_code = cat_item['category']
+                cat_name = category_map.get(cat_code, cat_code)
+                
+                # Get monthly totals for this category
+                monthly_totals = {}
+                monthly_txs = approved_transactions.filter(
+                    amount__lt=0,
+                    category=cat_code,
+                    date__gte=last_6_months
+                ).order_by('date')
+                
+                for tx in monthly_txs:
+                    month_key = tx.date.strftime('%b %Y')
+                    monthly_totals[month_key] = monthly_totals.get(month_key, 0) + abs(tx.amount)
+                
+                # Only add if has data
+                if monthly_totals and idx == 0:
+                    category_trend_labels = list(monthly_totals.keys())
+                
+                if monthly_totals:
+                    trend_data = [monthly_totals.get(label, 0) for label in category_trend_labels]
+                    colors = ['#F87171', '#60A5FA', '#34D399']
+                    category_trend_datasets.append({
+                        'label': cat_name,
+                        'data': trend_data,
+                        'borderColor': colors[idx],
+                        'backgroundColor': f'rgba({colors[idx].replace("#", "")}, 0.1)',
+                        'tension': 0.3
+                    })
+        
+        # Monthly Comparison Data (This Month vs Last Month)
+        today = datetime.now().date()
+        first_day_this_month = today.replace(day=1)
+        first_day_last_month = (first_day_this_month - timedelta(days=1)).replace(day=1)
+        last_day_last_month = first_day_this_month - timedelta(days=1)
+        
+        this_month_spending = abs(approved_transactions.filter(
+            amount__lt=0,
+            date__gte=first_day_this_month
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+        
+        last_month_spending = abs(approved_transactions.filter(
+            amount__lt=0,
+            date__gte=first_day_last_month,
+            date__lte=last_day_last_month
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+        
+        month_comparison_data = {
+            'this_month': this_month_spending,
+            'last_month': last_month_spending,
+            'this_month_name': first_day_this_month.strftime('%B'),
+            'last_month_name': first_day_last_month.strftime('%B'),
+            'monthly_change': ((this_month_spending - last_month_spending) / last_month_spending * 100) if last_month_spending > 0 else 0
+        }
+        
         # Prepare KPI data for template
         kpis = {
             'burn_rate_daily': daily_burn_rate,
@@ -754,6 +826,10 @@ def dashboard(request):
             'has_budgets': budgets.exists(),
             # New KPI data
             'kpis': kpis,
+            # Trend and comparison data
+            'category_trend_labels': category_trend_labels,
+            'category_trend_datasets': category_trend_datasets,
+            'month_comparison_data': month_comparison_data,
         }
     except Exception as e:
         context['error'] = f"An unexpected error occurred: {e}"

@@ -806,6 +806,66 @@
             {% endif %}
         </div>
 
+        <!-- Trend Analysis Section -->
+        <div class="space-y-8">
+            <!-- Category Trend Chart -->
+            {% if category_trend_labels %}
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm fade-in">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-purple-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Category Spending Trends (6 Months)</h3>
+                </div>
+                <div class="h-80"><canvas id="categoryTrendChart" aria-label="Category spending trends over 6 months"></canvas></div>
+            </div>
+            {% endif %}
+
+            <!-- Monthly Comparison Chart -->
+            {% if month_comparison_data %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Monthly Comparison Cards -->
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border border-blue-500/30 p-6 group hover:scale-105 transition-all">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-blue-500/20 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Monthly Comparison</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <p class="text-slate-400 text-sm mb-1">{{ month_comparison_data.this_month_name }}</p>
+                            <p class="text-white text-4xl font-black">₹{{ month_comparison_data.this_month|floatformat:0 }}</p>
+                        </div>
+
+                        <div class="border-t border-blue-500/20 pt-4">
+                            <p class="text-slate-400 text-sm mb-1">{{ month_comparison_data.last_month_name }}</p>
+                            <p class="text-slate-300 text-2xl font-bold">₹{{ month_comparison_data.last_month|floatformat:0 }}</p>
+                        </div>
+
+                        <div class="border-t border-blue-500/20 pt-4">
+                            <p class="text-slate-400 text-sm mb-1">Month-over-Month Change</p>
+                            <p class="text-white text-2xl font-black" {% if month_comparison_data.monthly_change > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %}>
+                                {{ month_comparison_data.monthly_change|floatformat:1 }}%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm">
+                    <h3 class="text-lg font-bold text-white mb-4">Spending Comparison</h3>
+                    <div class="h-64"><canvas id="monthComparisonChart" aria-label="This month vs last month spending"></canvas></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Sidebar: Recent Transactions & Sponsors -->
         <aside class="space-y-8 fade-in" style="animation-delay: 0.4s">
             <!-- Recent Approved Transactions -->
@@ -944,6 +1004,9 @@
 {{ income_data|json_script:"income-data" }}
 {{ spending_months|json_script:"spending-months-data" }}
 {{ spending_amounts|json_script:"spending-amounts-data" }}
+{{ category_trend_labels|json_script:"category-trend-labels" }}
+{{ category_trend_datasets|json_script:"category-trend-datasets" }}
+{{ month_comparison_data|json_script:"month-comparison-data" }}
 
 <script>
     function initializeCharts() {
@@ -1155,6 +1218,128 @@
                     });
                 }
             }
+
+            // Category Trend Chart (6-month trend of top 3 categories)
+            const categoryTrendLabels = JSON.parse(document.getElementById('category-trend-labels')?.textContent || '[]');
+            const categoryTrendDatasets = JSON.parse(document.getElementById('category-trend-datasets')?.textContent || '[]');
+            
+            const trendCtx = document.getElementById('categoryTrendChart');
+            if (trendCtx && categoryTrendLabels.length > 0 && categoryTrendDatasets.length > 0) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: categoryTrendLabels,
+                        datasets: categoryTrendDatasets.map(ds => ({
+                            label: ds.label,
+                            data: ds.data,
+                            borderColor: ds.borderColor,
+                            backgroundColor: ds.backgroundColor,
+                            tension: ds.tension || 0.3,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: ds.borderColor,
+                            pointBorderColor: '#1E293B',
+                            pointBorderWidth: 2,
+                            fill: true
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: '#D1D5DB', font: { size: 12, weight: 'bold' } }
+                            },
+                            tooltip: {
+                                backgroundColor: '#1E293B',
+                                titleColor: '#F1F5F9',
+                                bodyColor: '#F1F5F9',
+                                borderColor: '#475569',
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ₹' + context.parsed.y.toFixed(0);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#94a3b8' },
+                                grid: { color: '#334155' }
+                            },
+                            x: {
+                                ticks: { color: '#D1D5DB' },
+                                grid: { color: '#334155' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Monthly Comparison Chart
+            const monthCompData = JSON.parse(document.getElementById('month-comparison-data')?.textContent || '{}');
+            const monthCompCtx = document.getElementById('monthComparisonChart');
+            
+            if (monthCompCtx && monthCompData.this_month !== undefined) {
+                new Chart(monthCompCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [monthCompData.last_month_name, monthCompData.this_month_name],
+                        datasets: [{
+                            label: 'Spending',
+                            data: [monthCompData.last_month, monthCompData.this_month],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.6)',  // last month - blue
+                                monthCompData.monthly_change > 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(16, 185, 129, 0.6)'  // this month - red if increase, green if decrease
+                            ],
+                            borderColor: [
+                                '#3B82F6',
+                                monthCompData.monthly_change > 0 ? '#EF4444' : '#10B981'
+                            ],
+                            borderWidth: 2,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1E293B',
+                                titleColor: '#F1F5F9',
+                                bodyColor: '#F1F5F9',
+                                borderColor: '#475569',
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                    label: function(context) {
+                                        return '₹' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#94a3b8' },
+                                grid: { color: '#334155' }
+                            },
+                            x: {
+                                ticks: { color: '#D1D5DB' },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        }
     }
 
     // This robust function waits for Chart.js to be ready before trying to draw the charts.
