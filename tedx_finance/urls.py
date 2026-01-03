@@ -6,6 +6,8 @@ app_name = 'tedx_finance'
 urlpatterns = [
     # Auth
     path('signup/', views.signup, name='signup'),
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('login/', views.login_view, name='login'),
 
     # Main dashboard
     path('', views.dashboard, name='dashboard'),
@@ -43,6 +45,5 @@ urlpatterns = [
     path('export/proofs-csv/', views.export_proofs_to_csv, name='export_proofs_csv'),
     path('export/proofs-pdf/', views.export_proofs_to_pdf, name='export_proofs_pdf'),
     path('report/', views.finance_report, name='finance_report'),
-    # path('export/pdf/', views.export_transactions_pdf, name='export_pdf'), # Temporarily disabled
 ]
 

@@ -40,6 +40,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+    'tedx_finance.audit.AuditLoggingMiddleware',  # Audit logging middleware
 ]
 
 ROOT_URLCONF = 'realtime_tedx.urls'

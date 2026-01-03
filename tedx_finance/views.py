@@ -63,16 +63,111 @@ def get_sponsor_tier(amount):
 
 # --- Authentication ---
 def signup(request):
+    """User signup with email verification."""
+    from .models import EmailVerification
+    from .utils import generate_email_token, send_verification_email
+    
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Account created successfully! You can now log in.')
-            return redirect('login')
+            # Create user but mark as inactive until email verified
+            user = form.save(commit=False)
+            user.is_active = False  # Deactivate until email verified
+            user.save()
+            
+            # Create email verification record
+            token = generate_email_token()
+            EmailVerification.objects.create(user=user, token=token)
+            
+            # Send verification email
+            if send_verification_email(user, token, request):
+                messages.success(
+                    request,
+                    'Account created! Please check your email to verify your account. '
+                    'Verification link expires in 24 hours.'
+                )
+                return redirect('login')
+            else:
+                # If email fails, delete the user and show error
+                user.delete()
+                messages.error(request, 'Failed to send verification email. Please try again.')
     else:
         form = UserCreationForm()
+    
     context = {'form': form}
     return render(request, 'registration/signup.html', context)
+
+
+def verify_email(request, token):
+    """Verify user email from token."""
+    from .models import EmailVerification
+    from django.utils import timezone
+    
+    try:
+        verification = EmailVerification.objects.get(token=token)
+        
+        # Check if token is still valid (24 hours)
+        if not verification.is_token_valid(hours=24):
+            messages.error(request, 'Verification link has expired. Please sign up again.')
+            return redirect('signup')
+        
+        # Mark email as verified and activate user
+        verification.is_verified = True
+        verification.verified_at = timezone.now()
+        verification.save()
+        
+        user = verification.user
+        user.is_active = True
+        user.save()
+        
+        messages.success(request, 'Email verified successfully! You can now log in.')
+        return redirect('login')
+    
+    except EmailVerification.DoesNotExist:
+        messages.error(request, 'Invalid verification link.')
+        return redirect('signup')
+
+
+def login_view(request):
+    """Login view with rate limiting."""
+    from django.contrib.auth import authenticate, login as auth_login
+    from .models import LoginAttempt
+    from .utils import get_client_ip
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        ip_address = get_client_ip(request)
+        
+        # Check if IP is rate limited
+        if LoginAttempt.is_rate_limited(ip_address, max_attempts=5, time_window=300):
+            messages.error(
+                request,
+                'Too many failed login attempts. Please try again in 5 minutes.'
+            )
+            return render(request, 'registration/login.html')
+        
+        # Attempt authentication
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Successful login
+            LoginAttempt.log_attempt(username, ip_address, success=True)
+            
+            # Check if email is verified
+            if hasattr(user, 'email_verification') and not user.email_verification.is_verified:
+                messages.warning(request, 'Please verify your email before logging in.')
+                return redirect('login')
+            
+            auth_login(request, user)
+            messages.success(request, f'Welcome back, {user.first_name or username}!')
+            return redirect('dashboard')
+        else:
+            # Failed login
+            LoginAttempt.log_attempt(username, ip_address, success=False)
+            messages.error(request, 'Invalid username or password.')
+    
+    return render(request, 'registration/login.html')
 
 # --- Core Views ---
 @login_required
@@ -642,10 +737,34 @@ def add_transaction(request):
 
 @permission_required('tedx_finance.change_transaction', raise_exception=True)
 def approve_transaction(request, pk):
+    from .utils import log_audit_action, create_notification
+    
     transaction = get_object_or_404(Transaction, pk=pk)
     if request.method == 'POST':
         transaction.approved = True
         transaction.save()
+        
+        # Log audit action
+        log_audit_action(
+            request.user,
+            'approve_transaction',
+            'Transaction',
+            transaction.id,
+            f"Approved transaction: {transaction.title} (₹{transaction.amount})",
+            getattr(request, 'client_ip', None)
+        )
+        
+        # Create notification for transaction creator if different from approver
+        if transaction.created_by and transaction.created_by != request.user:
+            create_notification(
+                transaction.created_by,
+                'transaction_approved',
+                'Transaction Approved',
+                f"Your transaction '{transaction.title}' has been approved by {request.user.username}.",
+                'Transaction',
+                transaction.id
+            )
+        
         messages.success(request, f"Transaction '{transaction.title}' approved.")
     return redirect('tedx_finance:dashboard')
 
@@ -669,9 +788,35 @@ def edit_transaction(request, pk):
 
 @permission_required('tedx_finance.delete_transaction', raise_exception=True)
 def reject_transaction(request, pk):
+    from .utils import log_audit_action, create_notification
+    
     transaction = get_object_or_404(Transaction, pk=pk)
     if request.method == 'POST':
         title = transaction.title
+        amount = transaction.amount
+        created_by = transaction.created_by
+        
+        # Log audit action before deletion
+        log_audit_action(
+            request.user,
+            'reject_transaction',
+            'Transaction',
+            transaction.id,
+            f"Rejected and deleted transaction: {title} (₹{amount})",
+            getattr(request, 'client_ip', None)
+        )
+        
+        # Create notification for transaction creator
+        if created_by:
+            create_notification(
+                created_by,
+                'transaction_rejected',
+                'Transaction Rejected',
+                f"Your transaction '{title}' has been rejected and removed by {request.user.username}.",
+                'Transaction',
+                pk
+            )
+        
         transaction.delete()
         messages.warning(request, f"Transaction '{title}' has been rejected and deleted.")
     return redirect('tedx_finance:dashboard')

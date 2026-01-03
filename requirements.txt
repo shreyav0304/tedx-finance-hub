@@ -55,6 +55,10 @@ idna==3.10                     # Internationalized domain names
 charset-normalizer==3.4.2      # Character encoding detection
 six==1.17.0                    # Python 2/3 compatibility
 
+# ----- Security Features -----
+django-ratelimit==4.1.0        # Rate limiting for login/API endpoints
+Pillow==11.3.0                 # Image processing
+
 # ----- Graphics & Rendering -----
 pycairo==1.28.0                # Cairo graphics library
 rlPyCairo==0.4.0               # ReportLab Cairo integration
