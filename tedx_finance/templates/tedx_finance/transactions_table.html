@@ -10,10 +10,19 @@
             <p class="text-slate-600 dark:text-slate-400 mt-1">Click any cell to edit • Double-click to view details</p>
         </div>
         <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-            <a href="{% url 'tedx_finance:export_xlsx' %}"
-               class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 w-full sm:w-auto"
-               title="Export all approved transactions to Excel">
+            <a href="#"
+               id="exportExcelBtn"
+               onclick="exportWithFilters('excel')"
+               class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
+               title="Export filtered transactions to Excel">
                 📊 Export Excel
+            </a>
+            <a href="#"
+               id="exportPdfBtn"
+               onclick="exportWithFilters('pdf')"
+               class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
+               title="Export filtered transactions to PDF">
+                📄 Export PDF
             </a>
             <a href="{% url 'tedx_finance:import_transactions' %}"
                class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition w-full sm:w-auto text-center">

@@ -168,6 +168,29 @@ function clearAllFilters() {
     window.location.href = window.location.pathname; // Reload without query params
 }
 
+// Export with current filters
+function exportWithFilters(format) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let exportUrl = '';
+    
+    if (format === 'excel') {
+        exportUrl = '/export/excel/';
+    } else if (format === 'pdf') {
+        exportUrl = '/export/pdf/';
+    } else {
+        return;
+    }
+    
+    // Build URL with current filters
+    const queryString = urlParams.toString();
+    if (queryString) {
+        exportUrl += '?' + queryString;
+    }
+    
+    // Navigate to export URL
+    window.location.href = exportUrl;
+}
+
 
 // Bulk actions
 function bulkApprove() {

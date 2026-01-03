@@ -61,6 +61,67 @@ def get_sponsor_tier(amount):
     else:
         return 'Bronze', 'bg-amber-700 text-white'
 
+
+def apply_transaction_filters(request, queryset=None, user_is_treasurer=False):
+    """
+    Apply comprehensive filters to transaction queryset based on request parameters.
+    Reusable for both table views and exports.
+    
+    Args:
+        request: HTTP request with filter parameters
+        queryset: Initial queryset (defaults to all transactions)
+        user_is_treasurer: Whether to apply treasurer-only filters
+        
+    Returns:
+        Filtered queryset
+    """
+    if queryset is None:
+        queryset = Transaction.objects.all()
+    
+    # Search filter (searches in title, category, description)
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        queryset = queryset.filter(
+            Q(title__icontains=search_query) |
+            Q(category__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+    
+    # Status filter
+    status_filter = request.GET.get('status', 'all')
+    if status_filter == 'approved':
+        queryset = queryset.filter(approved=True)
+    elif status_filter == 'pending':
+        queryset = queryset.filter(approved=False)
+    
+    # Category filter
+    category_filter = request.GET.get('category', 'all')
+    if category_filter != 'all':
+        queryset = queryset.filter(category=category_filter)
+    
+    # Date range filters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date:
+        queryset = queryset.filter(date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(date__lte=end_date)
+    
+    # Amount range filters
+    min_amount = request.GET.get('min_amount')
+    max_amount = request.GET.get('max_amount')
+    if min_amount:
+        queryset = queryset.filter(amount__gte=min_amount)
+    if max_amount:
+        queryset = queryset.filter(amount__lte=max_amount)
+    
+    # Submitted by filter (for treasurers only)
+    submitted_by = request.GET.get('submitted_by')
+    if submitted_by and user_is_treasurer:
+        queryset = queryset.filter(created_by__username__icontains=submitted_by)
+    
+    return queryset
+
 # --- Authentication ---
 def signup(request):
     """User signup with email verification."""
@@ -401,50 +462,8 @@ def transactions_table(request):
     """Excel-like table view with inline editing capabilities and advanced filtering"""
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
-    # Start with all transactions
-    transactions = Transaction.objects.all()
-    
-    # Search filter (searches in title, category, description)
-    search_query = request.GET.get('search', '').strip()
-    if search_query:
-        transactions = transactions.filter(
-            Q(title__icontains=search_query) |
-            Q(category__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
-    
-    # Status filter
-    status_filter = request.GET.get('status', 'all')
-    if status_filter == 'approved':
-        transactions = transactions.filter(approved=True)
-    elif status_filter == 'pending':
-        transactions = transactions.filter(approved=False)
-    
-    # Category filter
-    category_filter = request.GET.get('category', 'all')
-    if category_filter != 'all':
-        transactions = transactions.filter(category=category_filter)
-    
-    # Date range filters
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    if start_date:
-        transactions = transactions.filter(date__gte=start_date)
-    if end_date:
-        transactions = transactions.filter(date__lte=end_date)
-    
-    # Amount range filters
-    min_amount = request.GET.get('min_amount')
-    max_amount = request.GET.get('max_amount')
-    if min_amount:
-        transactions = transactions.filter(amount__gte=min_amount)
-    if max_amount:
-        transactions = transactions.filter(amount__lte=max_amount)
-    
-    # Submitted by filter (for treasurers)
-    submitted_by = request.GET.get('submitted_by')
-    if submitted_by and user_is_treasurer:
-        transactions = transactions.filter(created_by__username__icontains=submitted_by)
+    # Apply filters using helper function
+    transactions = apply_transaction_filters(request, user_is_treasurer=user_is_treasurer)
     
     # Order by (default: newest first)
     order_by = request.GET.get('order_by', '-date')
@@ -471,14 +490,14 @@ def transactions_table(request):
         'transactions': transactions,
         'categories': categories,
         'is_treasurer': user_is_treasurer,
-        'search_query': search_query,
-        'status_filter': status_filter,
-        'category_filter': category_filter,
-        'start_date': start_date,
-        'end_date': end_date,
-        'min_amount': min_amount,
-        'max_amount': max_amount,
-        'submitted_by': submitted_by,
+        'search_query': request.GET.get('search', ''),
+        'status_filter': request.GET.get('status', 'all'),
+        'category_filter': request.GET.get('category', 'all'),
+        'start_date': request.GET.get('start_date'),
+        'end_date': request.GET.get('end_date'),
+        'min_amount': request.GET.get('min_amount'),
+        'max_amount': request.GET.get('max_amount'),
+        'submitted_by': request.GET.get('submitted_by'),
         'order_by': order_by,
     }
     return render(request, 'tedx_finance/transactions_table.html', context)
@@ -663,17 +682,17 @@ def finance_report(request):
 @login_required
 def export_transactions_pdf(request):
     """
-    Export financial report as PDF using xhtml2pdf.
+    Export financial report as PDF with comprehensive filtering support.
     
     Features:
-    - Optional date range filtering via GET parameters
-    - Includes sponsors with tier classification
-    - Shows approved transactions only
+    - Supports all transaction filters (search, status, category, date range, amount range, submitted by)
+    - Includes sponsors with tier classification (when no specific transaction filters applied)
+    - Shows filtered transactions based on user criteria
     - Includes proof images for transactions
     - Comprehensive error handling with user-friendly messages
     
     Args:
-        request: HTTP request with optional start_date and end_date GET parameters
+        request: HTTP request with optional filter parameters
         
     Returns:
         HttpResponse with PDF attachment or error message
@@ -686,8 +705,9 @@ def export_transactions_pdf(request):
     import os
     
     logger = logging.getLogger(__name__)
+    user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
-    # Parse date filters
+    # Parse date filters (for sponsor/fund income calculation)
     start_date_str = request.GET.get('start_date', '')
     end_date_str = request.GET.get('end_date', '')
     start_date = parse_date(start_date_str)
@@ -717,23 +737,28 @@ def export_transactions_pdf(request):
             for s in sp_qs.order_by('-amount')
         ]
         
-        # Approved transactions with date filtering
-        tx_qs = Transaction.objects.filter(approved=True)
-        if start_date:
-            tx_qs = tx_qs.filter(date__gte=start_date)
-        if end_date:
-            tx_qs = tx_qs.filter(date__lte=end_date)
+        # Apply comprehensive transaction filters
+        tx_qs = apply_transaction_filters(request, user_is_treasurer=user_is_treasurer)
         tx_qs = tx_qs.order_by('date')
         
-        # Calculate totals
+        # Calculate totals from filtered transactions
         total_spent_val = tx_qs.filter(amount__lt=0).aggregate(total=Sum('amount'))['total'] or 0
         total_spent = abs(total_spent_val)
         net_balance = total_income - total_spent
         
         # Check if there's data to export
         if not tx_qs.exists() and not sp_qs.exists():
-            messages.warning(request, '⚠️ No data found for the selected date range.')
-            return redirect('finance_report')
+            messages.warning(request, '⚠️ No data found matching your filters.')
+            return redirect('tedx_finance:transactions_table')
+        
+        # Build filter summary for PDF title
+        filter_summary = []
+        if request.GET.get('search'):
+            filter_summary.append(f"Search: {request.GET.get('search')}")
+        if request.GET.get('status') and request.GET.get('status') != 'all':
+            filter_summary.append(f"Status: {request.GET.get('status').title()}")
+        if request.GET.get('category') and request.GET.get('category') != 'all':
+            filter_summary.append(f"Category: {request.GET.get('category')}")
         
         context = {
             'transactions': tx_qs,
@@ -743,6 +768,7 @@ def export_transactions_pdf(request):
             'start_date': start_date_str or '',
             'end_date': end_date_str or '',
             'sponsors_with_tiers': sponsors_with_tiers,
+            'filter_summary': ' | '.join(filter_summary) if filter_summary else '',
             'for_pdf': True,
         }
         
@@ -1075,17 +1101,17 @@ def delete_sponsor(request, pk):
 @login_required
 def export_transactions_xlsx(request):
     """
-    Export approved transactions to Excel format with optional date filtering.
+    Export transactions to Excel format with comprehensive filtering support.
     
     Features:
-    - Exports only approved transactions
-    - Optional date range filtering
+    - Supports all transaction filters (search, status, category, date range, amount range, submitted by)
     - Formatted Excel with headers and proper column widths
-    - Includes transaction metadata (date, title, category, amount, submitter)
+    - Includes transaction metadata (date, title, category, amount, submitter, status)
+    - Summary row with totals and transaction count
     - Comprehensive error handling
     
     Args:
-        request: HTTP request with optional start_date and end_date GET parameters
+        request: HTTP request with optional filter parameters
         
     Returns:
         HttpResponse with Excel attachment or redirect with error message
@@ -1095,32 +1121,34 @@ def export_transactions_xlsx(request):
     from openpyxl.utils import get_column_letter
     
     logger = logging.getLogger(__name__)
+    user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
     try:
-        # Parse optional filters
-        start_date_str = request.GET.get('start_date')
-        end_date_str = request.GET.get('end_date')
-        start_date = parse_date(start_date_str)
-        end_date = parse_date(end_date_str)
-
-        # Query approved transactions
-        transactions = Transaction.objects.filter(approved=True)
-        if start_date:
-            transactions = transactions.filter(date__gte=start_date)
-        if end_date:
-            transactions = transactions.filter(date__lte=end_date)
+        # Apply all filters using helper function
+        transactions = apply_transaction_filters(request, user_is_treasurer=user_is_treasurer)
         transactions = transactions.order_by('date')
         
         # Check if there's data to export
         if not transactions.exists():
-            messages.warning(request, '⚠️ No approved transactions found for the selected date range.')
+            messages.warning(request, '⚠️ No transactions found matching your filters.')
             return redirect('tedx_finance:transactions_table')
         
         # Create Excel workbook
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
-        filename = f'tedx_transactions_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        
+        # Build filename with filter summary
+        filter_parts = []
+        if request.GET.get('search'):
+            filter_parts.append('filtered')
+        if request.GET.get('status') and request.GET.get('status') != 'all':
+            filter_parts.append(request.GET.get('status'))
+        if request.GET.get('category') and request.GET.get('category') != 'all':
+            filter_parts.append(request.GET.get('category'))
+        
+        filter_suffix = f"_{'_'.join(filter_parts)}" if filter_parts else ''
+        filename = f'tedx_transactions{filter_suffix}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         workbook = openpyxl.Workbook()
@@ -1128,7 +1156,7 @@ def export_transactions_xlsx(request):
         worksheet.title = 'Transactions'
         
         # Header row with styling
-        columns = ['Date', 'Title', 'Category', 'Amount', 'Submitted By']
+        columns = ['Date', 'Title', 'Category', 'Amount', 'Status', 'Submitted By']
         worksheet.append(columns)
         
         # Style header row
@@ -1147,6 +1175,7 @@ def export_transactions_xlsx(request):
                 tx.title,
                 tx.get_category_display(),
                 float(tx.amount),
+                'Approved' if tx.approved else 'Pending',
                 tx.created_by.username if tx.created_by else 'N/A'
             ]
             worksheet.append(row)
@@ -1172,6 +1201,7 @@ def export_transactions_xlsx(request):
             '',
             'TOTAL',
             total_amount,
+            '',
             f'{transactions.count()} transactions'
         ]
         worksheet.append(summary_row)
