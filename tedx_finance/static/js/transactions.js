@@ -6,11 +6,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
     const categoryFilter = document.getElementById('categoryFilter');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const minAmount = document.getElementById('minAmount');
+    const maxAmount = document.getElementById('maxAmount');
+    const submittedBy = document.getElementById('submittedBy');
     const table = document.getElementById('transactionsTable');
     
     if (!table) return; // Exit if not on transactions page
     
-    // Real-time search and filter
+    // Advanced filters toggle
+    const advancedFiltersToggle = document.getElementById('advancedFiltersToggle');
+    const advancedFiltersContent = document.getElementById('advancedFiltersContent');
+    const advancedChevron = document.getElementById('advancedChevron');
+    
+    if (advancedFiltersToggle) {
+        advancedFiltersToggle.addEventListener('click', function() {
+            advancedFiltersContent.classList.toggle('hidden');
+            advancedChevron.style.transform = advancedFiltersContent.classList.contains('hidden') 
+                ? 'rotate(0deg)' 
+                : 'rotate(180deg)';
+        });
+        
+        // Auto-expand if any advanced filter has value
+        const hasAdvancedFilters = (startDate && startDate.value) || 
+                                   (endDate && endDate.value) || 
+                                   (minAmount && minAmount.value) || 
+                                   (maxAmount && maxAmount.value) ||
+                                   (submittedBy && submittedBy.value);
+        if (hasAdvancedFilters) {
+            advancedFiltersContent.classList.remove('hidden');
+            advancedChevron.style.transform = 'rotate(180deg)';
+        }
+    }
+    
+    // Real-time search and filter (client-side for UX, server-side on page load)
     function filterTransactions() {
         const searchTerm = searchInput.value.toLowerCase();
         const statusValue = statusFilter.value;
@@ -22,21 +52,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const cells = row.querySelectorAll('td');
             if (cells.length === 0) return;
             
-            const title = cells[0].textContent.toLowerCase();
-            const category = cells[2].textContent.trim();
-            const status = cells[5] ? cells[5].textContent.toLowerCase() : '';
+            // Get row data
+            const rowData = row.dataset;
+            const title = cells[2] ? cells[2].textContent.toLowerCase() : '';
+            const category = rowData.category || '';
+            const status = rowData.status || '';
             
-            // Check search
-            const matchesSearch = title.includes(searchTerm) || 
-                                category.toLowerCase().includes(searchTerm);
+            // Check search (searches in title - server handles full search)
+            const matchesSearch = !searchTerm || title.includes(searchTerm);
             
             // Check status
-            const matchesStatus = statusValue === 'all' || 
-                                 status.includes(statusValue);
+            const matchesStatus = statusValue === 'all' || status === statusValue;
             
             // Check category
-            const matchesCategory = categoryValue === 'all' || 
-                                   category === categoryValue;
+            const matchesCategory = categoryValue === 'all' || category === categoryValue;
             
             if (matchesSearch && matchesStatus && matchesCategory) {
                 row.style.display = '';
@@ -53,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!noResultsRow) {
                 noResultsRow = document.createElement('tr');
                 noResultsRow.className = 'no-results';
-                noResultsRow.innerHTML = '<td colspan="10" class="text-center py-8 text-slate-500">No transactions found</td>';
+                noResultsRow.innerHTML = '<td colspan="10" class="text-center py-8 text-slate-500 dark:text-slate-400">No transactions found matching filters</td>';
                 tbody.appendChild(noResultsRow);
             }
         } else {
@@ -64,14 +93,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Event listeners
+    // Apply server-side filters by updating URL
+    function applyServerFilters() {
+        const params = new URLSearchParams();
+        
+        if (searchInput.value) params.set('search', searchInput.value);
+        if (statusFilter.value !== 'all') params.set('status', statusFilter.value);
+        if (categoryFilter.value !== 'all') params.set('category', categoryFilter.value);
+        if (startDate && startDate.value) params.set('start_date', startDate.value);
+        if (endDate && endDate.value) params.set('end_date', endDate.value);
+        if (minAmount && minAmount.value) params.set('min_amount', minAmount.value);
+        if (maxAmount && maxAmount.value) params.set('max_amount', maxAmount.value);
+        if (submittedBy && submittedBy.value) params.set('submitted_by', submittedBy.value);
+        
+        // Reload page with filters
+        window.location.search = params.toString();
+    }
+    
+    // Debounce function for search input
+    let searchTimeout;
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            applyServerFilters();
+        }, 800); // Wait 800ms after user stops typing
+    }
+    
+    // Event listeners for real-time client-side filtering
     searchInput.addEventListener('input', filterTransactions);
-    statusFilter.addEventListener('change', filterTransactions);
-    categoryFilter.addEventListener('change', filterTransactions);
+    statusFilter.addEventListener('change', function() {
+        filterTransactions();
+        applyServerFilters(); // Also update URL
+    });
+    categoryFilter.addEventListener('change', function() {
+        filterTransactions();
+        applyServerFilters(); // Also update URL
+    });
+    
+    // Event listeners for advanced filters (server-side only)
+    if (startDate) startDate.addEventListener('change', applyServerFilters);
+    if (endDate) endDate.addEventListener('change', applyServerFilters);
+    if (minAmount) minAmount.addEventListener('blur', applyServerFilters);
+    if (maxAmount) maxAmount.addEventListener('blur', applyServerFilters);
+    if (submittedBy) submittedBy.addEventListener('blur', applyServerFilters);
+    
+    // Debounced search for server-side filtering
+    searchInput.addEventListener('input', debounceSearch);
     
     // Keyboard shortcut for search (/)
     document.addEventListener('keydown', function(e) {
-        if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
             e.preventDefault();
             searchInput.focus();
         }
@@ -91,6 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Clear all filters function
+function clearAllFilters() {
+    window.location.href = window.location.pathname; // Reload without query params
+}
+
 
 // Bulk actions
 function bulkApprove() {

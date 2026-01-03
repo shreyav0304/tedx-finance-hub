@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.http import HttpResponse, JsonResponse
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
@@ -398,9 +398,61 @@ def budget_suggestions(request):
     return render(request, 'tedx_finance/budget_suggestions.html', context)
 @login_required
 def transactions_table(request):
-    """Excel-like table view with inline editing capabilities"""
+    """Excel-like table view with inline editing capabilities and advanced filtering"""
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
-    transactions = Transaction.objects.all().order_by('-date')
+    
+    # Start with all transactions
+    transactions = Transaction.objects.all()
+    
+    # Search filter (searches in title, category, description)
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        transactions = transactions.filter(
+            Q(title__icontains=search_query) |
+            Q(category__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+    
+    # Status filter
+    status_filter = request.GET.get('status', 'all')
+    if status_filter == 'approved':
+        transactions = transactions.filter(approved=True)
+    elif status_filter == 'pending':
+        transactions = transactions.filter(approved=False)
+    
+    # Category filter
+    category_filter = request.GET.get('category', 'all')
+    if category_filter != 'all':
+        transactions = transactions.filter(category=category_filter)
+    
+    # Date range filters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date:
+        transactions = transactions.filter(date__gte=start_date)
+    if end_date:
+        transactions = transactions.filter(date__lte=end_date)
+    
+    # Amount range filters
+    min_amount = request.GET.get('min_amount')
+    max_amount = request.GET.get('max_amount')
+    if min_amount:
+        transactions = transactions.filter(amount__gte=min_amount)
+    if max_amount:
+        transactions = transactions.filter(amount__lte=max_amount)
+    
+    # Submitted by filter (for treasurers)
+    submitted_by = request.GET.get('submitted_by')
+    if submitted_by and user_is_treasurer:
+        transactions = transactions.filter(created_by__username__icontains=submitted_by)
+    
+    # Order by (default: newest first)
+    order_by = request.GET.get('order_by', '-date')
+    valid_order_fields = ['date', '-date', 'amount', '-amount', 'title', '-title', 'category', '-category']
+    if order_by in valid_order_fields:
+        transactions = transactions.order_by(order_by)
+    else:
+        transactions = transactions.order_by('-date')
     
     # Dynamic categories merged with defaults for filters
     try:
@@ -419,6 +471,15 @@ def transactions_table(request):
         'transactions': transactions,
         'categories': categories,
         'is_treasurer': user_is_treasurer,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'category_filter': category_filter,
+        'start_date': start_date,
+        'end_date': end_date,
+        'min_amount': min_amount,
+        'max_amount': max_amount,
+        'submitted_by': submitted_by,
+        'order_by': order_by,
     }
     return render(request, 'tedx_finance/transactions_table.html', context)
 
