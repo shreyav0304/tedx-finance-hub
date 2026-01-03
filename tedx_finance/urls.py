@@ -4,10 +4,9 @@ from . import views
 app_name = 'tedx_finance'
 
 urlpatterns = [
-    # Auth
+    # Auth (signup and verify-email only - login/logout handled in root urls.py)
     path('signup/', views.signup, name='signup'),
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
-    path('login/', views.login_view, name='login'),
 
     # Main dashboard
     path('', views.dashboard, name='dashboard'),

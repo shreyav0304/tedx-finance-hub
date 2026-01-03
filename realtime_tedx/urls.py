@@ -2,14 +2,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from tedx_finance.views import login_view, signup
+from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # This line tells the main project to include Django's built-in login/logout URLs
-    path('accounts/', include('django.contrib.auth.urls')),
+    # Custom auth routes (email verification)
+    path('signup/', signup, name='signup'),
+    path('login/', login_view, name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
     
-    # This line tells the main project to hand off any matching requests to your app's urls.py file
+    # Include app URLs
     path('', include('tedx_finance.urls')),
 ]
 

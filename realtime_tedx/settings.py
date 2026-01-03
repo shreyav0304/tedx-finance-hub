@@ -117,12 +117,13 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
 LOGIN_REDIRECT_URL = '/'
-LOGIN_URL = '/accounts/login/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGIN_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 # Email Configuration
 # For development - prints emails to console
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@tedxfinancehub.com')
 
 # For production, use:
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
