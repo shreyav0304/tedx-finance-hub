@@ -50,6 +50,9 @@
 - **Management Funds** - Record initial funding from organization
 - **Inline Editing** - Click any cell to edit (Excel-like)
 - **Bulk Operations** - Select multiple transactions, approve/reject/export at once
+- **Proof Gallery** - Searchable proofs with bulk drag-and-drop uploads and auto-matching
+- **Notifications & Alerts** - Real-time bell badge plus API for unread counts
+- **User Settings** - Per-user theme and email notification preferences
 
 ### 📊 Reports & Analytics
 - **Financial Dashboard** - Income, expenses, balance, trends
