@@ -640,6 +640,90 @@ def dashboard(request):
         budget_amounts = [item['budget_amount'] for item in budget_comparison]
         actual_amounts = [item['spent'] for item in budget_comparison]
 
+        # ============ ENHANCED KPI CALCULATIONS ============
+        
+        # Spending Analytics (Last 30 days)
+        thirty_days_ago = datetime.now().date() - timedelta(days=30)
+        recent_approved_tx = approved_transactions.filter(date__gte=thirty_days_ago)
+        recent_spending_30d = abs(recent_approved_tx.filter(amount__lt=0).aggregate(total=Sum('amount'))['total'] or 0)
+        
+        # Burn rate (daily/weekly/monthly)
+        days_with_spending = min(30, (datetime.now().date() - thirty_days_ago).days)
+        if days_with_spending > 0:
+            daily_burn_rate = recent_spending_30d / days_with_spending
+            weekly_burn_rate = daily_burn_rate * 7
+            monthly_burn_rate = daily_burn_rate * 30
+        else:
+            daily_burn_rate = weekly_burn_rate = monthly_burn_rate = 0
+        
+        # Runway calculation (how many days until funds run out)
+        if daily_burn_rate > 0 and remaining_balance > 0:
+            runway_days = int(remaining_balance / daily_burn_rate)
+            runway_months = runway_days // 30
+        else:
+            runway_days = 0
+            runway_months = 0
+        
+        # Transaction metrics
+        total_tx_count = approved_transactions.count()
+        pending_tx_count = Transaction.objects.filter(approved=False).count()
+        recent_tx_count = recent_approved_tx.count()
+        
+        # Average transaction size
+        avg_tx_size = (total_spent / total_tx_count) if total_tx_count > 0 else 0
+        
+        # Spending velocity (transactions per day in last 30 days)
+        if days_with_spending > 0:
+            velocity = recent_tx_count / days_with_spending
+        else:
+            velocity = 0
+        
+        # Category concentration (top category spending percentage)
+        if category_spending:
+            category_totals = [abs(cat['total']) for cat in category_spending]
+            max_category_spend = max(category_totals) if category_totals else 0
+            category_concentration = (max_category_spend / total_spent * 100) if total_spent > 0 else 0
+        else:
+            category_concentration = 0
+        
+        # Growth rate (compare last 30 days to previous 30 days)
+        sixty_days_ago = datetime.now().date() - timedelta(days=60)
+        previous_30d_spending = abs(approved_transactions.filter(
+            amount__lt=0,
+            date__gte=sixty_days_ago,
+            date__lt=thirty_days_ago
+        ).aggregate(total=Sum('amount'))['total'] or 0)
+        
+        if previous_30d_spending > 0:
+            growth_rate = ((recent_spending_30d - previous_30d_spending) / previous_30d_spending) * 100
+        else:
+            growth_rate = 0 if recent_spending_30d == 0 else 100
+        
+        # Income vs Spending Ratio
+        if total_income > 0:
+            spending_ratio = (total_spent / total_income) * 100
+        else:
+            spending_ratio = 0
+        
+        # Prepare KPI data for template
+        kpis = {
+            'burn_rate_daily': daily_burn_rate,
+            'burn_rate_weekly': weekly_burn_rate,
+            'burn_rate_monthly': monthly_burn_rate,
+            'runway_days': runway_days,
+            'runway_months': runway_months,
+            'total_tx_count': total_tx_count,
+            'pending_tx_count': pending_tx_count,
+            'recent_tx_count_30d': recent_tx_count,
+            'avg_tx_size': avg_tx_size,
+            'velocity_per_day': velocity,
+            'category_concentration': category_concentration,
+            'growth_rate': growth_rate,
+            'spending_ratio': spending_ratio,
+            'recent_spending_30d': recent_spending_30d,
+            'avg_transaction_size': avg_tx_size,
+        }
+
         context = {
             'user': request.user,
             'total_funds': total_funds,
@@ -668,6 +752,8 @@ def dashboard(request):
             'budget_exceeded_count': budget_exceeded_count,
             'budget_warning_count': budget_warning_count,
             'has_budgets': budgets.exists(),
+            # New KPI data
+            'kpis': kpis,
         }
     except Exception as e:
         context['error'] = f"An unexpected error occurred: {e}"

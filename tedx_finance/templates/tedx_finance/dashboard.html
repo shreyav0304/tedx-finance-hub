@@ -422,6 +422,128 @@
     </div>
 </section>
 
+<!-- ADVANCED KPIs -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+    <!-- Burn Rate Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-600/20 to-rose-600/20 border border-red-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.1s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-red-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <span class="text-xs text-red-300 font-bold">30D AVG</span>
+        </div>
+        <h3 class="text-red-200 text-xs font-bold uppercase mb-1">Burn Rate</h3>
+        <p class="text-white text-2xl font-black">₹{{ kpis.burn_rate_daily|floatformat:0 }}<span class="text-sm text-red-300">/day</span></p>
+        <p class="text-xs text-slate-400 mt-2">Weekly: ₹{{ kpis.burn_rate_weekly|floatformat:0 }} | Monthly: ₹{{ kpis.burn_rate_monthly|floatformat:0 }}</p>
+    </div>
+    
+    <!-- Runway Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-600/20 to-amber-600/20 border border-yellow-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.2s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-yellow-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <span class="text-xs text-yellow-300 font-bold">AT CURRENT RATE</span>
+        </div>
+        <h3 class="text-yellow-200 text-xs font-bold uppercase mb-1">Runway</h3>
+        <p class="text-white text-2xl font-black">{{ kpis.runway_days }}<span class="text-sm text-yellow-300"> days</span></p>
+        <p class="text-xs text-slate-400 mt-2">{{ kpis.runway_months }} months remaining</p>
+    </div>
+    
+    <!-- Transaction Velocity Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border border-purple-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.3s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-purple-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <span class="text-xs text-purple-300 font-bold">VELOCITY</span>
+        </div>
+        <h3 class="text-purple-200 text-xs font-bold uppercase mb-1">Transactions/Day</h3>
+        <p class="text-white text-2xl font-black">{{ kpis.velocity_per_day|floatformat:2 }}</p>
+        <p class="text-xs text-slate-400 mt-2">{{ kpis.recent_tx_count_30d }} transactions (30D)</p>
+    </div>
+    
+    <!-- Growth Rate Card -->
+    <div class="relative overflow-hidden rounded-xl border p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.4s"
+         {% if kpis.growth_rate > 15 %}
+             style="background-image: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2)); border-color: rgba(239, 68, 68, 0.3);"
+         {% elif kpis.growth_rate > 0 %}
+             style="background-image: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.2)); border-color: rgba(251, 191, 36, 0.3);"
+         {% else %}
+             style="background-image: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2)); border-color: rgba(16, 185, 129, 0.3);"
+         {% endif %}>
+        <div class="flex items-center justify-between mb-3">
+            <div class="p-2.5 rounded-lg" {% if kpis.growth_rate > 0 %}style="background-color: rgba(239, 68, 68, 0.2);"{% else %}style="background-color: rgba(16, 185, 129, 0.2);"{% endif %}>
+                <svg class="w-5 h-5" {% if kpis.growth_rate > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if kpis.growth_rate > 0 %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                    {% else %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7H5v12a2 2 0 002 2h10a2 2 0 002-2V9"/>
+                    {% endif %}
+                </svg>
+            </div>
+            <span class="text-xs font-bold" {% if kpis.growth_rate > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %}>VS PREV 30D</span>
+        </div>
+        <h3 class="text-slate-300 text-xs font-bold uppercase mb-1">Growth Rate</h3>
+        <p class="text-white text-2xl font-black">{{ kpis.growth_rate|floatformat:1 }}<span class="text-sm ml-1" {% if kpis.growth_rate > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %}>%</span></p>
+        <p class="text-xs text-slate-400 mt-2">Recent 30D vs Previous 30D</p>
+    </div>
+</section>
+
+<!-- SECONDARY KPIs -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+    <!-- Category Concentration Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-pink-600/20 to-fuchsia-600/20 border border-pink-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.5s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-pink-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                </svg>
+            </div>
+            <span class="text-xs text-pink-300 font-bold">CONCENTRATION</span>
+        </div>
+        <h3 class="text-pink-200 text-xs font-bold uppercase mb-1">Top Category</h3>
+        <p class="text-white text-2xl font-black">{{ kpis.category_concentration|floatformat:1 }}<span class="text-sm text-pink-300">%</span></p>
+        <p class="text-xs text-slate-400 mt-2">of total spending</p>
+    </div>
+    
+    <!-- Spending Ratio Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.6s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-cyan-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <span class="text-xs text-cyan-300 font-bold">RATIO</span>
+        </div>
+        <h3 class="text-cyan-200 text-xs font-bold uppercase mb-1">Spend/Income</h3>
+        <p class="text-white text-2xl font-black">{{ kpis.spending_ratio|floatformat:1 }}<span class="text-sm text-cyan-300">%</span></p>
+        <p class="text-xs text-slate-400 mt-2">percentage of income spent</p>
+    </div>
+    
+    <!-- Average Transaction Card -->
+    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-lime-600/20 to-green-600/20 border border-lime-500/30 p-5 group hover:scale-105 transition-all fade-in" style="animation-delay: 0.7s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-lime-500/20 p-2.5 rounded-lg">
+                <svg class="w-5 h-5 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <span class="text-xs text-lime-300 font-bold">AVERAGE</span>
+        </div>
+        <h3 class="text-lime-200 text-xs font-bold uppercase mb-1">Avg Transaction</h3>
+        <p class="text-white text-2xl font-black">₹{{ kpis.avg_transaction_size|floatformat:0 }}</p>
+        <p class="text-xs text-slate-400 mt-2">per transaction (30D)</p>
+    </div>
+</section>
+
 <!-- MANAGEMENT & SPONSORSHIP FUNDS TABLE -->
 <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
     <!-- Management Funds -->
