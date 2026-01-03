@@ -6,6 +6,7 @@ from django.db.models import Sum, Q
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.cache import cache
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
@@ -53,6 +54,33 @@ def parse_date(date_str):
     return None
 
 
+def get_cached_category_choices():
+    """Return merged category choices (dynamic + defaults) with short caching."""
+    cache_key = 'tedx_category_choices'
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        dynamic = list(Category.objects.all().values_list('name', 'name'))
+    except Exception:
+        dynamic = []
+    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
+    seen = set()
+    merged = []
+    for val, label in dynamic + default_choices:
+        if val not in seen:
+            merged.append((val, label))
+            seen.add(val)
+
+    cache.set(cache_key, merged, 300)  # 5 minutes
+    return merged
+
+
+def invalidate_category_cache():
+    cache.delete('tedx_category_choices')
+
+
 def get_sponsor_tier(amount):
     """
     Returns sponsor tier name and badge class based on amount.
@@ -85,7 +113,9 @@ def apply_transaction_filters(request, queryset=None, user_is_treasurer=False):
         Filtered queryset
     """
     if queryset is None:
-        queryset = Transaction.objects.all()
+        queryset = Transaction.objects.all().select_related('created_by')
+    else:
+        queryset = queryset.select_related('created_by')
     
     # Search filter (searches in title, category, description)
     search_query = request.GET.get('search', '').strip()
@@ -483,17 +513,7 @@ def transactions_table(request):
         transactions = transactions.order_by('-date')
     
     # Dynamic categories merged with defaults for filters
-    try:
-        dynamic = list(Category.objects.all().values_list('name', 'name'))
-    except Exception:
-        dynamic = []
-    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
-    seen = set()
-    categories = []
-    for val, label in dynamic + default_choices:
-        if val not in seen:
-            categories.append((val, label))
-            seen.add(val)
+    categories = get_cached_category_choices()
 
     context = {
         'transactions': transactions,
@@ -570,7 +590,7 @@ def dashboard(request):
 
         # Recent and Pending Transactions
         transactions = approved_transactions.order_by('-date')[:10]
-        pending_transactions = Transaction.objects.filter(approved=False).order_by('-date')
+        pending_transactions = Transaction.objects.filter(approved=False).select_related('created_by').order_by('-date')
 
         # Sponsor tiers (within selected date range)
         sponsors_qs = sp_qs.order_by('-amount')
@@ -1784,6 +1804,7 @@ def manage_categories(request):
         try:
             cat = Category.objects.get(id=delete_id)
             cat.delete()
+            invalidate_category_cache()
             messages.warning(request, f'Category "{cat.name}" deleted.')
             return redirect('tedx_finance:manage_categories')
         except Category.DoesNotExist:
@@ -1816,6 +1837,7 @@ def proof_gallery(request):
     
     # Query transactions with proofs
     transactions = Transaction.objects.filter(approved=True, proof__isnull=False).exclude(proof='')
+    transactions = transactions.select_related('created_by')
     
     if search_query:
         transactions = transactions.filter(
@@ -1832,17 +1854,7 @@ def proof_gallery(request):
     transactions = transactions.order_by('-date')
     
     # Get unique categories for filter dropdown
-    try:
-        dynamic = list(Category.objects.all().values_list('name', 'name'))
-    except Exception:
-        dynamic = []
-    default_choices = list(getattr(Transaction, 'CATEGORY_CHOICES', []))
-    seen = set()
-    categories = []
-    for val, label in dynamic + default_choices:
-        if val not in seen:
-            categories.append((val, label))
-            seen.add(val)
+    categories = get_cached_category_choices()
     
     context = {
         'transactions': transactions,
@@ -1942,9 +1954,9 @@ def bulk_upload_proofs(request):
         return redirect('tedx_finance:proof_gallery')
     
     # GET: Show upload form with pending transactions
-    pending_transactions = Transaction.objects.filter(
-        approved=False
-    ).order_by('-date')[:50]  # Limit to recent 50
+        pending_transactions = Transaction.objects.filter(
+            approved=False
+        ).select_related('created_by').order_by('-date')[:50]  # Limit to recent 50
     
     context = {
         'pending_transactions': pending_transactions,
@@ -1968,6 +1980,7 @@ def quick_add_category(request):
         if len(name) > 50:
             return JsonResponse({'success': False, 'error': 'Name must be <= 50 chars'}, status=400)
         cat, created = Category.objects.get_or_create(name=name)
+        invalidate_category_cache()
         # Build merged categories list (dynamic + defaults) preserving order
         try:
             dynamic = list(Category.objects.all().values_list('name', 'name'))
@@ -2016,6 +2029,7 @@ def quick_rename_category(request):
         prev_name = cat.name
         cat.name = new_name
         cat.save()
+        invalidate_category_cache()
         # Update Transaction rows that used the old string value
         Transaction.objects.filter(category=prev_name).update(category=new_name)
         # Build merged list
