@@ -875,10 +875,23 @@ def bulk_reject_transactions(request):
 # --- Income Management ---
 @permission_required('tedx_finance.add_managementfund', raise_exception=True)
 def add_management_fund(request):
+    from .utils import log_audit_action
+    
     if request.method == 'POST':
         form = ManagementFundForm(request.POST)
         if form.is_valid():
-            form.save()
+            fund = form.save()
+            
+            # Log audit action
+            log_audit_action(
+                request.user,
+                'create_fund',
+                'ManagementFund',
+                fund.id,
+                f"Created management fund: ₹{fund.amount} on {fund.date_received}",
+                getattr(request, 'client_ip', None)
+            )
+            
             messages.success(request, 'Management fund updated!')
             return redirect('tedx_finance:dashboard')
     else:
@@ -889,11 +902,25 @@ def add_management_fund(request):
 @permission_required('tedx_finance.change_managementfund', raise_exception=True)
 def edit_management_fund(request, pk):
     """Edit an existing management fund (treasurers only)."""
+    from .utils import log_audit_action
+    
     fund = get_object_or_404(ManagementFund, pk=pk)
     if request.method == 'POST':
         form = ManagementFundForm(request.POST, instance=fund)
         if form.is_valid():
+            old_amount = fund.amount
             form.save()
+            
+            # Log audit action
+            log_audit_action(
+                request.user,
+                'update_fund',
+                'ManagementFund',
+                fund.id,
+                f"Updated management fund from ₹{old_amount} to ₹{fund.amount}",
+                getattr(request, 'client_ip', None)
+            )
+            
             messages.success(request, 'Management fund updated successfully.')
             return redirect('tedx_finance:dashboard')
     else:
@@ -907,9 +934,23 @@ def edit_management_fund(request, pk):
 @permission_required('tedx_finance.delete_managementfund', raise_exception=True)
 def delete_management_fund(request, pk):
     """Delete a management fund entry (treasurers only)."""
+    from .utils import log_audit_action
+    
     fund = get_object_or_404(ManagementFund, pk=pk)
     if request.method == 'POST':
         amount = fund.amount
+        date = fund.date_received
+        
+        # Log audit action before deletion
+        log_audit_action(
+            request.user,
+            'delete_fund',
+            'ManagementFund',
+            fund.id,
+            f"Deleted management fund: ₹{amount} from {date}",
+            getattr(request, 'client_ip', None)
+        )
+        
         fund.delete()
         messages.warning(request, f'Management fund of ₹{amount} has been deleted.')
     return redirect('tedx_finance:dashboard')
@@ -948,9 +989,23 @@ def edit_sponsor(request, pk):
 @permission_required('tedx_finance.delete_sponsor', raise_exception=True)
 def delete_sponsor(request, pk):
     """Delete a sponsor entry (treasurers only)."""
+    from .utils import log_audit_action
+    
     sponsor = get_object_or_404(Sponsor, pk=pk)
     if request.method == 'POST':
         name = sponsor.name
+        amount = sponsor.amount
+        
+        # Log audit action before deletion
+        log_audit_action(
+            request.user,
+            'delete_fund',
+            'Sponsor',
+            sponsor.id,
+            f"Deleted sponsor: {name} (₹{amount})",
+            getattr(request, 'client_ip', None)
+        )
+        
         sponsor.delete()
         messages.warning(request, f'Sponsor "{name}" has been deleted.')
     return redirect('tedx_finance:dashboard')
