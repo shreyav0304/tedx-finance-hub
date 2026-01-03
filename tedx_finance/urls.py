@@ -44,5 +44,11 @@ urlpatterns = [
     path('export/proofs-csv/', views.export_proofs_to_csv, name='export_proofs_csv'),
     path('export/proofs-pdf/', views.export_proofs_to_pdf, name='export_proofs_pdf'),
     path('report/', views.finance_report, name='finance_report'),
+    
+    # Notifications
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/api/unread/', views.get_unread_notifications_count, name='get_unread_count'),
+    path('notifications/<int:pk>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_read'),
 ]
 

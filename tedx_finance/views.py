@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
@@ -2082,3 +2083,86 @@ def export_proofs_to_pdf(request):
     doc.build(elements)
     return response
 
+
+# ============================================================================
+# NOTIFICATIONS VIEWS
+# ============================================================================
+
+@login_required
+def notifications_list(request):
+    """Display all notifications for the logged-in user with pagination."""
+    from .models_improvements import Notification
+    
+    notifications = Notification.objects.filter(user=request.user).select_related('user')
+    unread_count = notifications.filter(is_read=False).count()
+    
+    # Pagination
+    paginator = Paginator(notifications, 20)
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+    
+    context = {
+        'page_obj': page_obj,
+        'notifications': page_obj.object_list,
+        'unread_count': unread_count,
+        'total_notifications': notifications.count(),
+    }
+    
+    return render(request, 'tedx_finance/notifications.html', context)
+
+
+@login_required
+def get_unread_notifications_count(request):
+    """API endpoint to get unread notifications count (for real-time updates)."""
+    from django.http import JsonResponse
+    from .models_improvements import Notification
+    
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({'unread_count': unread_count})
+
+
+@login_required
+def mark_notification_read(request, pk):
+    """Mark a single notification as read."""
+    from django.http import JsonResponse
+    from .models_improvements import Notification
+    
+    try:
+        notification = Notification.objects.get(pk=pk, user=request.user)
+        notification.is_read = True
+        notification.save()
+        
+        # Get remaining unread count
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count,
+            'message': 'Notification marked as read'
+        })
+    except Notification.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
+
+
+@login_required
+def mark_all_notifications_read(request):
+    """Mark all notifications as read for the user."""
+    from django.http import JsonResponse
+    from .models_improvements import Notification
+    
+    if request.method == 'POST':
+        unread_notifications = Notification.objects.filter(user=request.user, is_read=False)
+        count = unread_notifications.update(is_read=True)
+        
+        return JsonResponse({
+            'success': True,
+            'marked_as_read': count,
+            'message': f'{count} notifications marked as read'
+        })
+    
+    return JsonResponse({'success': False, 'error': 'POST request required'}, status=400)
