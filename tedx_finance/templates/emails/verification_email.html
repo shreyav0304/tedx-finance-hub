@@ -2,100 +2,150 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1f2937;
+            background-color: #f3f4f6;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f9fafb;
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             color: white;
-            padding: 30px;
+            padding: 40px 30px;
             text-align: center;
-            border-radius: 8px 8px 0 0;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 6px rgba(220, 38, 38, 0.1);
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
         }
         .content {
             background-color: white;
-            padding: 30px;
-            border-radius: 0 0 8px 8px;
+            padding: 40px 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .content p {
+            margin: 0 0 15px 0;
+            line-height: 1.7;
         }
         .button {
             display: inline-block;
-            padding: 12px 30px;
+            padding: 14px 32px;
             margin: 20px 0;
-            background-color: #667eea;
+            background-color: #dc2626;
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 15px;
+            transition: background-color 0.3s ease;
         }
         .button:hover {
-            background-color: #5568d3;
+            background-color: #991b1b;
         }
         .footer {
             text-align: center;
             padding: 20px;
-            color: #666;
+            color: #6b7280;
             font-size: 12px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid #e5e7eb;
             margin-top: 20px;
         }
+        .footer p {
+            margin: 5px 0;
+        }
         .warning {
-            background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
+            background-color: #fef2f2;
+            border-left: 4px solid #dc2626;
             padding: 15px;
             margin: 20px 0;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .warning strong {
+            color: #991b1b;
+        }
+        .warning p {
+            margin: 5px 0 0 0;
+            color: #7f1d1d;
+        }
+        ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+            color: #1f2937;
+        }
+        .copy-link {
+            background-color: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            word-break: break-all;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Welcome to TEDx Finance Hub! 🎉</h1>
+            <h1>Welcome to TEDx Finance Hub!</h1>
+            <p>Let's secure your account</p>
         </div>
         
         <div class="content">
             <p>Hi <strong>{{ user.first_name|default:user.username }}</strong>,</p>
             
-            <p>Thank you for creating an account with TEDx Finance Hub. To complete your registration, please verify your email address by clicking the button below:</p>
+            <p>Thank you for joining TEDx Finance Hub! We're excited to have you on board. To get started, please verify your email address by clicking the button below:</p>
             
             <center>
-                <a href="{{ verification_url }}" class="button">Verify Email Address</a>
+                <a href="{{ verification_url }}" class="button">✓ Verify Email Address</a>
             </center>
             
             <p>Or copy this link into your browser:</p>
-            <p style="word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px; font-size: 12px;">
-                {{ verification_url }}
-            </p>
+            <div class="copy-link">{{ verification_url }}</div>
             
             <div class="warning">
-                <strong>⏰ This link expires in {{ expiration_hours }} hours</strong>
-                <p style="margin: 5px 0 0 0;">If you don't verify your email, your account will remain inactive.</p>
+                <strong>⏰ Link expires in {{ expiration_hours }} hours</strong>
+                <p>If you don't verify your email within {{ expiration_hours }} hours, you'll need to sign up again.</p>
             </div>
             
-            <p><strong>Why verify your email?</strong></p>
+            <h3 style="color: #1f2937; margin-top: 25px;">Why verify your email?</h3>
             <ul>
-                <li>Secure your account</li>
-                <li>Receive important notifications</li>
-                <li>Unlock all features</li>
+                <li><strong>Secure your account</strong> - Verifies you own this email</li>
+                <li><strong>Receive notifications</strong> - Stay updated on important events</li>
+                <li><strong>Account recovery</strong> - Reset password if needed</li>
             </ul>
             
-            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
                 <strong>Didn't create this account?</strong><br>
-                If you believe you received this email in error, please disregard it. Your account will remain inactive if you don't verify.
+                If you believe you received this email by mistake, simply ignore it and your account will remain inactive.
+            </p>
+            
+            <p style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; color: #6b7280; font-size: 13px;">
+                Need help? Contact us at support@tedxfinancehub.com
             </p>
         </div>
         
         <div class="footer">
-            <p>&copy; 2025 TEDx Finance Hub. All rights reserved.</p>
+            <p><strong>TEDx Finance Hub</strong> © 2025</p>
             <p>This is an automated message. Please do not reply to this email.</p>
         </div>
     </div>

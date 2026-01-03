@@ -544,69 +544,88 @@
     </div>
 </section>
 
+<!-- MAIN CONTENT WITH SIDEBAR -->
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-6 lg:gap-8 mb-12">
+    
+    <!-- LEFT COLUMN: Main Content -->
+    <div class="xl:col-span-3 space-y-8">
+        
 <!-- MANAGEMENT & SPONSORSHIP FUNDS TABLE -->
-<section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
     <!-- Management Funds -->
     <div class="section-card p-6">
-        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-4">Management Funds</h2>
-        <table class="w-full text-left rounded-lg overflow-hidden shadow-md">
-            <thead>
-                <tr class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white">
-    <th class="py-3 px-5 text-base font-bold">Amount (₹)</th>
-    <th class="py-3 px-5 text-base font-bold">Date Received</th>
-    {% if is_treasurer %}<th class="py-3 px-5 text-base font-bold">Actions</th>{% endif %}
-</tr>
-            </thead>
-            <tbody>
-                {% for fund in management_funds_list %}
-                <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">₹{{ fund.amount|floatformat:2 }}</td>
-    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ fund.date_received }}</td>
-    {% if is_treasurer %}
-    <td class="py-3 px-5 flex gap-2">
-        <a href="{% url 'tedx_finance:edit_management_fund' fund.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Edit</a>
-        <button onclick="deleteManagementFund({{ fund.pk }}, {{ fund.amount }})" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 text-sm">Delete</button>
-    </td>
-    {% endif %}
-</tr>
-                {% empty %}
-                <tr><td colspan="{% if is_treasurer %}3{% else %}2{% endif %}" class="py-3 px-5 text-slate-500 dark:text-slate-400">No management funds found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <h2 class="text-xl font-bold text-white">Management Funds</h2>
+        </div>
+        <div class="table-surface overflow-auto custom-scrollbar">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Amount (₹)</th>
+                        <th>Date Received</th>
+                        {% if is_treasurer %}<th>Actions</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody class="text-sm sm:text-base">
+                    {% for fund in management_funds_list %}
+                    <tr>
+                        <td class="font-semibold text-white whitespace-nowrap">₹{{ fund.amount|floatformat:2 }}</td>
+                        <td class="text-slate-200 whitespace-nowrap">{{ fund.date_received }}</td>
+                        {% if is_treasurer %}
+                        <td class="row-actions">
+                            <a href="{% url 'tedx_finance:edit_management_fund' fund.pk %}" class="btn btn-primary text-xs sm:text-sm">Edit</a>
+                            <button onclick="deleteManagementFund({{ fund.pk }}, {{ fund.amount }})" class="btn btn-ghost text-xs sm:text-sm">Delete</button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if is_treasurer %}3{% else %}2{% endif %}" class="py-4 px-5 text-slate-400">No management funds found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     <!-- Sponsorship Funds -->
     <div class="section-card p-6">
-        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-300 mb-4">Sponsorship Funds</h2>
-        <table class="w-full text-left rounded-lg overflow-hidden shadow-md">
-            <thead>
-                <tr class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white">
-    <th class="py-3 px-5 text-base font-bold">Sponsor</th>
-    <th class="py-3 px-5 text-base font-bold">Amount (₹)</th>
-    <th class="py-3 px-5 text-base font-bold">Date Received</th>
-    {% if is_treasurer %}<th class="py-3 px-5 text-base font-bold">Actions</th>{% endif %}
-</tr>
-            </thead>
-            <tbody>
-                {% for sponsor in sponsors_list %}
-                <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ sponsor.name }}</td>
-    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">₹{{ sponsor.amount|floatformat:2 }}</td>
-    <td class="py-3 px-5 text-lg text-slate-900 dark:text-white font-medium">{{ sponsor.date_received }}</td>
-    {% if is_treasurer %}
-    <td class="py-3 px-5 flex gap-2">
-        <a href="{% url 'tedx_finance:edit_sponsor' sponsor.pk %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Edit</a>
-        <button onclick="deleteSponsor({{ sponsor.pk }}, '{{ sponsor.name }}')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 text-sm">Delete</button>
-    </td>
-    {% endif %}
-</tr>
-                {% empty %}
-                <tr><td colspan="{% if is_treasurer %}4{% else %}3{% endif %}" class="py-3 px-5 text-slate-500 dark:text-slate-400">No sponsorship funds found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <h2 class="text-xl font-bold text-white">Sponsorship Funds</h2>
+        </div>
+        <div class="table-surface overflow-auto custom-scrollbar">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sponsor</th>
+                        <th>Amount (₹)</th>
+                        <th>Date Received</th>
+                        {% if is_treasurer %}<th>Actions</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody class="text-sm sm:text-base">
+                    {% for sponsor in sponsors_list %}
+                    <tr>
+                        <td class="font-semibold text-white whitespace-nowrap">{{ sponsor.name }}</td>
+                        <td class="text-slate-200 whitespace-nowrap">₹{{ sponsor.amount|floatformat:2 }}</td>
+                        <td class="text-slate-200 whitespace-nowrap">{{ sponsor.date_received }}</td>
+                        {% if is_treasurer %}
+                        <td class="row-actions">
+                            <a href="{% url 'tedx_finance:edit_sponsor' sponsor.pk %}" class="btn btn-primary text-xs sm:text-sm">Edit</a>
+                            <button onclick="deleteSponsor({{ sponsor.pk }}, '{{ sponsor.name }}')" class="btn btn-ghost text-xs sm:text-sm">Delete</button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if is_treasurer %}4{% else %}3{% endif %}" class="py-4 px-5 text-slate-400">No sponsorship funds found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </section>
+<!-- End Management & Sponsorship Tables -->
 
     <!-- PENDING TRANSACTIONS (Treasurer only) -->
     {% if is_treasurer and pending_transactions %}
@@ -674,11 +693,9 @@
     </section>
     {% endif %}
 
-    <!-- CHARTS + RECENT TX -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Charts Section -->
-        <div class="lg:col-span-2 space-y-8 fade-in" style="animation-delay: 0.3s">
-            <!-- Spending by Category -->
+    <!-- CHARTS -->
+    <div class="space-y-8 fade-in" style="animation-delay: 0.3s">
+        <!-- Spending by Category -->
             <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm hover:border-slate-600 transition-all">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="bg-purple-500/20 p-3 rounded-xl">
@@ -825,50 +842,49 @@
 
             <!-- Monthly Comparison Chart -->
             {% if month_comparison_data %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Monthly Comparison Cards -->
-                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border border-blue-500/30 p-6 group hover:scale-105 transition-all">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="bg-blue-500/20 p-3 rounded-xl">
-                            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-white">Monthly Comparison</h3>
+            <div class="section-card p-6 mb-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-blue-500/20 p-3 rounded-xl">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Monthly Spending Comparison</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-slate-900/40 border border-slate-700/50 rounded-xl p-4">
+                        <p class="text-slate-400 text-sm mb-2">{{ month_comparison_data.this_month_name }}</p>
+                        <p class="text-white text-3xl font-black">₹{{ month_comparison_data.this_month|floatformat:0 }}</p>
                     </div>
 
-                    <div class="space-y-6">
-                        <div>
-                            <p class="text-slate-400 text-sm mb-1">{{ month_comparison_data.this_month_name }}</p>
-                            <p class="text-white text-4xl font-black">₹{{ month_comparison_data.this_month|floatformat:0 }}</p>
-                        </div>
+                    <div class="bg-slate-900/40 border border-slate-700/50 rounded-xl p-4">
+                        <p class="text-slate-400 text-sm mb-2">{{ month_comparison_data.last_month_name }}</p>
+                        <p class="text-slate-300 text-3xl font-black">₹{{ month_comparison_data.last_month|floatformat:0 }}</p>
+                    </div>
 
-                        <div class="border-t border-blue-500/20 pt-4">
-                            <p class="text-slate-400 text-sm mb-1">{{ month_comparison_data.last_month_name }}</p>
-                            <p class="text-slate-300 text-2xl font-bold">₹{{ month_comparison_data.last_month|floatformat:0 }}</p>
-                        </div>
-
-                        <div class="border-t border-blue-500/20 pt-4">
-                            <p class="text-slate-400 text-sm mb-1">Month-over-Month Change</p>
-                            <p class="text-white text-2xl font-black" {% if month_comparison_data.monthly_change > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %}>
-                                {{ month_comparison_data.monthly_change|floatformat:1 }}%
-                            </p>
-                        </div>
+                    <div class="bg-slate-900/40 border border-slate-700/50 rounded-xl p-4">
+                        <p class="text-slate-400 text-sm mb-2">Change</p>
+                        <p class="text-3xl font-black" {% if month_comparison_data.monthly_change > 0 %}style="color: rgb(248, 113, 113);"{% else %}style="color: rgb(52, 211, 153);"{% endif %}>
+                            {{ month_comparison_data.monthly_change|floatformat:1 }}%
+                        </p>
                     </div>
                 </div>
 
-                <!-- Comparison Chart -->
-                <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm">
-                    <h3 class="text-lg font-bold text-white mb-4">Spending Comparison</h3>
-                    <div class="h-64"><canvas id="monthComparisonChart" aria-label="This month vs last month spending"></canvas></div>
+                <div class="h-64 bg-slate-900/40 border border-slate-700/50 rounded-xl p-4">
+                    <canvas id="monthComparisonChart" aria-label="This month vs last month spending"></canvas>
                 </div>
             </div>
             {% endif %}
-        </div>
-
-        <!-- Sidebar: Recent Transactions & Sponsors -->
-        <aside class="space-y-8 fade-in" style="animation-delay: 0.4s">
-            <!-- Recent Approved Transactions -->
+    </div>
+    <!-- End Main Content Column -->
+    
+    </div>
+    <!-- End Left Column -->
+    
+    <!-- RIGHT COLUMN: Sidebar -->
+    <aside class="xl:col-span-1 space-y-6 fade-in" style="animation-delay: 0.4s">
+        <!-- Recent Approved Transactions -->
             <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="bg-indigo-500/20 p-3 rounded-xl">
@@ -995,9 +1011,11 @@
                 </ul>
             </div>
             {% endif %}
-        </aside>
-    </div>
+    </aside>
+    <!-- End Right Column -->
+    
 </div>
+<!-- End Main Grid with Sidebar -->
 
 <!-- chart data -->
 {{ category_spending|json_script:"category-spending-data" }}

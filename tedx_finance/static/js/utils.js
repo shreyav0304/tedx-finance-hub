@@ -83,39 +83,7 @@ function setButtonLoading(button, isLoading = true) {
     }
 }
 
-// Scroll to top
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-}
-
-// Add "back to top" button
-function initBackToTopButton() {
-    const backToTopBtn = document.createElement('button');
-    backToTopBtn.id = 'backToTop';
-    backToTopBtn.className = 'fixed bottom-8 right-8 bg-red-600 text-white p-3 rounded-full shadow-lg hover:bg-red-700 transition hidden z-40';
-    backToTopBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>';
-    backToTopBtn.setAttribute('title', 'Back to top');
-    backToTopBtn.onclick = scrollToTop;
-    
-    document.body.appendChild(backToTopBtn);
-    
-    // Show/hide button based on scroll position
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            backToTopBtn.classList.remove('hidden');
-        } else {
-            backToTopBtn.classList.add('hidden');
-        }
-    });
-}
-
-// Initialize all utility features
-document.addEventListener('DOMContentLoaded', function() {
-    initBackToTopButton();
-});
+// Back to top functionality removed - no floating buttons
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {

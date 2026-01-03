@@ -169,44 +169,6 @@ function initializeTooltips() {
 
 document.addEventListener('DOMContentLoaded', initializeTooltips);
 
-// ====== BACK TO TOP BUTTON ======
-
-function initBackToTop() {
-    /**
-     * Create and manage "Back to Top" button
-     */
-    const backToTopBtn = document.createElement('button');
-    backToTopBtn.id = 'backToTopBtn';
-    backToTopBtn.innerHTML = '⬆️';
-    backToTopBtn.className = 'fixed bottom-6 right-6 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 transition opacity-0 invisible duration-300 z-40';
-    backToTopBtn.title = 'Back to top (End key)';
-    
-    document.body.appendChild(backToTopBtn);
-    
-    // Show button when scrolled down
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            backToTopBtn.classList.remove('opacity-0', 'invisible');
-        } else {
-            backToTopBtn.classList.add('opacity-0', 'invisible');
-        }
-    });
-    
-    // Scroll to top on click
-    backToTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    
-    // Also support End key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'End') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', initBackToTop);
-
 // ====== KEYBOARD SHORTCUTS ======
 
 function initKeyboardShortcuts() {

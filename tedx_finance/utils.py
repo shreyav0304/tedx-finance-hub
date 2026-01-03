@@ -30,11 +30,11 @@ def send_verification_email(user, token, request):
             'expiration_hours': 24,
         }
         
-        message = render_to_string('emails/verification_email.html', context)
+        message = render_to_string('tedx_finance/emails/verification_email.html', context)
         send_mail(
             subject='Verify your TEDx Finance Hub email',
             message='',
-            from_email=settings.DEFAULT_FROM_EMAIL or 'noreply@tedxfinanance.com',
+            from_email=settings.DEFAULT_FROM_EMAIL or 'noreply@tedxfinancehub.com',
             recipient_list=[user.email],
             html_message=message,
             fail_silently=False,
@@ -55,11 +55,11 @@ def send_password_reset_email(user, reset_url):
             'expiration_hours': 24,
         }
         
-        message = render_to_string('emails/password_reset.html', context)
+        message = render_to_string('tedx_finance/emails/password_reset.html', context)
         send_mail(
             subject='Reset your TEDx Finance Hub password',
             message='',
-            from_email=settings.DEFAULT_FROM_EMAIL or 'noreply@tedxfinanance.com',
+            from_email=settings.DEFAULT_FROM_EMAIL or 'noreply@tedxfinancehub.com',
             recipient_list=[user.email],
             html_message=message,
             fail_silently=False,
@@ -69,6 +69,59 @@ def send_password_reset_email(user, reset_url):
     except Exception as e:
         logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
         return False
+
+
+def send_login_notification_email(user, request):
+    """Send login notification email to user with login details."""
+    try:
+        ip_address = get_client_ip(request)
+        user_agent_string = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        
+        # Simple browser extraction
+        browser = 'Unknown'
+        if 'Chrome' in user_agent_string:
+            browser = 'Chrome'
+        elif 'Firefox' in user_agent_string:
+            browser = 'Firefox'
+        elif 'Safari' in user_agent_string:
+            browser = 'Safari'
+        elif 'Edge' in user_agent_string:
+            browser = 'Edge'
+        elif 'Mobile' in user_agent_string:
+            browser = 'Mobile Browser'
+        
+        context = {
+            'user': user,
+            'login_time': timezone.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'ip_address': ip_address,
+            'browser': browser,
+            'location': 'Unknown',
+        }
+        
+        message = render_to_string('tedx_finance/emails/login_notification.html', context)
+        send_mail(
+            subject='New Login to Your TEDx Finance Hub Account',
+            message='',
+            from_email=settings.DEFAULT_FROM_EMAIL or 'noreply@tedxfinancehub.com',
+            recipient_list=[user.email],
+            html_message=message,
+            fail_silently=True,  # Don't fail login if email fails
+        )
+        logger.info(f"Login notification email sent to {user.email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send login notification email to {user.email}: {str(e)}")
+        return False
+
+
+def get_client_ip(request):
+    """Extract client IP address from request, handling proxy headers."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 def log_audit_action(user, action, object_type, object_id, description, ip_address=None):
@@ -103,66 +156,3 @@ def create_notification(user, notification_type, title, message, related_object_
         logger.info(f"Notification created for {user.username}: {title}")
     except Exception as e:
         logger.error(f"Failed to create notification: {str(e)}")
-
-
-def get_client_ip(request):
-    """Extract client IP address from request."""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-    try:
-        AuditLog.objects.create(
-            user=user,
-            action=action,
-            object_type=object_type,
-            object_id=object_id,
-            description=description,
-            ip_address=ip_address,
-        )
-        logger.debug(f"Audit log created: {user.username} - {action}")
-    except Exception as e:
-        logger.error(f"Failed to create audit log: {str(e)}")
-
-
-def create_notification(user, notification_type, title, message, related_type=None, related_id=None):
-    """Create a user notification."""
-    from .models_improvements import Notification
-    try:
-        Notification.objects.create(
-            user=user,
-            notification_type=notification_type,
-            title=title,
-            message=message,
-            related_object_type=related_type,
-            related_object_id=related_id,
-        )
-        logger.debug(f"Notification created for {user.username}: {title}")
-    except Exception as e:
-        logger.error(f"Failed to create notification: {str(e)}")
-
-
-def get_client_ip(request):
-    """Get client IP address from request."""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-
-
-def check_rate_limit(request, max_attempts=5, time_window=300):
-    """Check if request IP is rate limited."""
-    from .models_improvements import LoginAttempt
-    ip = get_client_ip(request)
-    return LoginAttempt.is_rate_limited(ip, max_attempts, time_window)
-
-
-def log_login_attempt(request, username, success):
-    """Log a login attempt."""
-    from .models_improvements import LoginAttempt
-    ip = get_client_ip(request)
-    LoginAttempt.log_attempt(username, ip, success)

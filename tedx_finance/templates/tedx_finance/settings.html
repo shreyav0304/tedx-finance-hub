@@ -5,10 +5,10 @@
 <div class="max-w-4xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <p class="text-sm text-slate-400">Customize your experience</p>
-            <h1 class="text-3xl font-bold text-white">Settings</h1>
+            <p class="text-sm text-slate-400 settings-subtitle">Customize your experience</p>
+            <h1 class="text-3xl font-bold text-white settings-page-title">Settings</h1>
         </div>
-        <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-300 hover:text-white text-sm inline-flex items-center gap-2">
+        <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-300 hover:text-white text-sm inline-flex items-center gap-2 settings-back-link">
             <span aria-hidden="true">⟵</span> Back to dashboard
         </a>
     </div>
@@ -35,22 +35,22 @@
         <section class="section-card">
             <header class="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <p class="text-sm text-slate-400">Appearance</p>
-                    <h2 class="text-xl font-semibold text-white">Theme</h2>
+                    <p class="text-sm text-slate-400 settings-subtitle">Appearance</p>
+                    <h2 class="text-xl font-semibold text-white settings-heading">Theme</h2>
                 </div>
-                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200">Syncs across sessions</span>
+                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200 settings-badge">Syncs across sessions</span>
             </header>
             <div class="grid md:grid-cols-2 gap-4 items-start">
                 <div class="space-y-2">
-                    <label for="id_theme" class="block text-slate-200 font-semibold">Choose theme</label>
+                    <label for="id_theme" class="block text-slate-200 font-semibold settings-label">Choose theme</label>
                     {{ form.theme }}
-                    <p class="text-xs text-slate-400">Auto follows system preference; light/dark overrides.</p>
+                    <p class="text-xs text-slate-400 settings-help">Auto follows system preference; light/dark overrides.</p>
                 </div>
-                <div class="bg-slate-900/60 rounded-xl border border-slate-700 p-4 flex items-center gap-3">
+                <div class="theme-preview-box bg-slate-900/60 rounded-xl border border-slate-700 p-4 flex items-center gap-3">
                     <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl">✨</div>
                     <div>
-                        <p class="text-sm text-slate-200 font-semibold">Live preview</p>
-                        <p class="text-xs text-slate-400">Changing the theme updates immediately and persists.</p>
+                        <p class="text-sm text-slate-200 font-semibold settings-preview-title">Live preview</p>
+                        <p class="text-xs text-slate-400 settings-preview-text">Changing the theme updates immediately and persists.</p>
                     </div>
                 </div>
             </div>
@@ -59,46 +59,46 @@
         <section class="section-card">
             <header class="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <p class="text-sm text-slate-400">Notifications</p>
-                    <h2 class="text-xl font-semibold text-white">Email preferences</h2>
+                    <p class="text-sm text-slate-400 settings-subtitle">Notifications</p>
+                    <h2 class="text-xl font-semibold text-white settings-heading">Email preferences</h2>
                 </div>
-                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200">Stay informed</span>
+                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200 settings-badge">Stay informed</span>
             </header>
             <div class="space-y-3">
-                <label class="flex items-start gap-3">
+                <label class="flex items-start gap-3 settings-checkbox-label">
                     {{ form.email_notifications }}
                     <div>
-                        <p class="font-semibold text-slate-200">Email notifications</p>
-                        <p class="text-xs text-slate-400">Account and finance updates.</p>
+                        <p class="font-semibold text-slate-200 settings-checkbox-title">Email notifications</p>
+                        <p class="text-xs text-slate-400 settings-checkbox-help">Account and finance updates.</p>
                     </div>
                 </label>
-                <label class="flex items-start gap-3">
+                <label class="flex items-start gap-3 settings-checkbox-label">
                     {{ form.transaction_alerts }}
                     <div>
-                        <p class="font-semibold text-slate-200">Transaction alerts</p>
-                        <p class="text-xs text-slate-400">Status changes and approvals.</p>
+                        <p class="font-semibold text-slate-200 settings-checkbox-title">Transaction alerts</p>
+                        <p class="text-xs text-slate-400 settings-checkbox-help">Status changes and approvals.</p>
                     </div>
                 </label>
-                <label class="flex items-start gap-3">
+                <label class="flex items-start gap-3 settings-checkbox-label">
                     {{ form.weekly_digest }}
                     <div>
-                        <p class="font-semibold text-slate-200">Weekly digest</p>
-                        <p class="text-xs text-slate-400">Summary of spending and budgets.</p>
+                        <p class="font-semibold text-slate-200 settings-checkbox-title">Weekly digest</p>
+                        <p class="text-xs text-slate-400 settings-checkbox-help">Summary of spending and budgets.</p>
                     </div>
                 </label>
-                <label class="flex items-start gap-3">
+                <label class="flex items-start gap-3 settings-checkbox-label">
                     {{ form.marketing_opt_in }}
                     <div>
-                        <p class="font-semibold text-slate-200">Product updates</p>
-                        <p class="text-xs text-slate-400">Occasional product news (low volume).</p>
+                        <p class="font-semibold text-slate-200 settings-checkbox-title">Product updates</p>
+                        <p class="text-xs text-slate-400 settings-checkbox-help">Occasional product news (low volume).</p>
                     </div>
                 </label>
             </div>
         </section>
 
         <div class="flex justify-end gap-3">
-            <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600">Cancel</a>
-            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">Save settings</button>
+            <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600 settings-btn-cancel">Cancel</a>
+            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold settings-btn-save">Save settings</button>
         </div>
     </form>
 </div>
@@ -124,13 +124,19 @@
             }
         }
         localStorage.setItem('theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme);
-        updateNavColors(theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme);
+        if (typeof updateNavColors === 'function') {
+            updateNavColors(theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme);
+        }
     }
 
     themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
 
-    // Apply current selection on load
-    applyTheme(themeSelect.value);
+    // Don't apply theme on load - let the base.html theme loading handle it
+    // Only sync the dropdown to match current theme
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    if (themeSelect.value !== currentTheme) {
+        themeSelect.value = currentTheme;
+    }
 })();
 </script>
 {% endblock %}

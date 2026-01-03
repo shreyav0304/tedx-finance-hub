@@ -7,9 +7,19 @@ from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
+from django.template.loader import render_to_string
+from django.core.files.storage import default_storage
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
+import json
+import csv
+import io
+import os
+import zipfile
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 
 from .models import ManagementFund, Sponsor, Transaction, Category, UserPreference
 from .forms import (
@@ -20,8 +30,6 @@ from .forms import (
     validate_file_extension,
     validate_file_size,
 )
-
-import openpyxl
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -232,12 +240,17 @@ def login_view(request):
     """Login view with rate limiting."""
     from django.contrib.auth import authenticate, login as auth_login
     from .models import LoginAttempt
-    from .utils import get_client_ip
+    from .utils import get_client_ip, send_login_notification_email
     
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
         ip_address = get_client_ip(request)
+        
+        # Check if username and password are provided
+        if not username or not password:
+            messages.error(request, 'Please provide both username and password.')
+            return render(request, 'registration/login.html')
         
         # Check if IP is rate limited
         if LoginAttempt.is_rate_limited(ip_address, max_attempts=5, time_window=300):
@@ -260,11 +273,17 @@ def login_view(request):
                 return redirect('login')
             
             auth_login(request, user)
+            
+            # Send login notification email
+            if hasattr(user, 'preferences') and user.preferences.email_notifications:
+                send_login_notification_email(user, request)
+            
             messages.success(request, f'Welcome back, {user.first_name or username}!')
-            return redirect('dashboard')
+            return redirect('tedx_finance:dashboard')
         else:
-            # Failed login
-            LoginAttempt.log_attempt(username, ip_address, success=False)
+            # Failed login - still log it if username is provided
+            if username:
+                LoginAttempt.log_attempt(username, ip_address, success=False)
             messages.error(request, 'Invalid username or password.')
     
     return render(request, 'registration/login.html')
@@ -298,8 +317,6 @@ def budget_suggestions(request):
     from .models import Budget
     from django.db.models import Sum, Count, Avg
     from django.db.models.functions import TruncWeek
-    from datetime import datetime, timedelta
-    import json
     
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
@@ -560,6 +577,7 @@ def dashboard(request):
         management_funds = mf_qs.aggregate(total=Sum('amount'))['total'] or 0
         sponsor_funds = sp_qs.aggregate(total=Sum('amount'))['total'] or 0
         total_funds = management_funds + sponsor_funds
+        total_income = total_funds  # alias for clarity in downstream KPIs
 
         # Approved transactions with optional date filters
         approved_transactions = Transaction.objects.filter(approved=True)
@@ -947,11 +965,6 @@ def export_transactions_pdf(request):
         HttpResponse with PDF attachment or error message
     """
     from xhtml2pdf import pisa
-    from django.template.loader import render_to_string
-    from django.http import HttpResponse
-    import io
-    import logging
-    import os
     
     logger = logging.getLogger(__name__)
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
@@ -1165,7 +1178,6 @@ def reject_transaction(request, pk):
 def bulk_approve_transactions(request):
     """Bulk approve multiple transactions."""
     if request.method == 'POST':
-        import json
         try:
             data = json.loads(request.body)
             transaction_ids = data.get('ids', [])
@@ -1190,7 +1202,6 @@ def bulk_approve_transactions(request):
 def bulk_reject_transactions(request):
     """Bulk reject (delete) multiple transactions."""
     if request.method == 'POST':
-        import json
         try:
             data = json.loads(request.body)
             transaction_ids = data.get('ids', [])
@@ -1377,10 +1388,6 @@ def export_transactions_xlsx(request):
     Returns:
         HttpResponse with Excel attachment or redirect with error message
     """
-    import logging
-    from openpyxl.styles import Font, Alignment, PatternFill
-    from openpyxl.utils import get_column_letter
-    
     logger = logging.getLogger(__name__)
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
@@ -1501,14 +1508,6 @@ def export_transactions_with_proofs(request):
     Returns:
         HttpResponse with ZIP attachment containing Excel + proof images
     """
-    import logging
-    import zipfile
-    import io
-    import os
-    from openpyxl.styles import Font, Alignment, PatternFill
-    from openpyxl.utils import get_column_letter
-    from django.core.files.storage import default_storage
-    
     logger = logging.getLogger(__name__)
     
     try:
@@ -1954,9 +1953,9 @@ def bulk_upload_proofs(request):
         return redirect('tedx_finance:proof_gallery')
     
     # GET: Show upload form with pending transactions
-        pending_transactions = Transaction.objects.filter(
-            approved=False
-        ).select_related('created_by').order_by('-date')[:50]  # Limit to recent 50
+    pending_transactions = Transaction.objects.filter(
+        approved=False
+    ).select_related('created_by').order_by('-date')[:50]  # Limit to recent 50
     
     context = {
         'pending_transactions': pending_transactions,
@@ -1971,7 +1970,6 @@ def quick_add_category(request):
         return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
-    import json
     try:
         data = json.loads(request.body or '{}')
         name = (data.get('name') or '').strip()
@@ -2005,7 +2003,6 @@ def quick_rename_category(request):
         return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
-    import json
     try:
         data = json.loads(request.body or '{}')
         cat_id = data.get('id')
@@ -2055,7 +2052,6 @@ def export_proofs_to_csv(request):
     Export proof gallery data to CSV file.
     Includes transaction details and proof file URLs.
     """
-    import csv
     
     # Apply same filters as proof_gallery view
     category_filter = request.GET.get('category', '')
@@ -2286,7 +2282,6 @@ def notifications_list(request):
 @login_required
 def get_unread_notifications_count(request):
     """API endpoint to get unread notifications count (for real-time updates)."""
-    from django.http import JsonResponse
     from .models_improvements import Notification
     
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
@@ -2296,7 +2291,6 @@ def get_unread_notifications_count(request):
 @login_required
 def mark_notification_read(request, pk):
     """Mark a single notification as read."""
-    from django.http import JsonResponse
     from .models_improvements import Notification
     
     try:
@@ -2319,7 +2313,6 @@ def mark_notification_read(request, pk):
 @login_required
 def mark_all_notifications_read(request):
     """Mark all notifications as read for the user."""
-    from django.http import JsonResponse
     from .models_improvements import Notification
     
     if request.method == 'POST':

@@ -20,11 +20,29 @@
 - ✅ XSS Protection - Template auto-escaping
 
 ### ⚠️ Environment Variables Needed for Production:
+Use the `.env.production.example` template as the starting point.
+
+**Required:**
 ```bash
 DJANGO_SECRET_KEY=<generate-strong-random-key>
 DJANGO_DEBUG=False
 DJANGO_ALLOWED_HOSTS=yourdomain.com,.vercel.app
 DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://your-app.vercel.app
+DATABASE_URL=postgres://user:password@host:5432/dbname
+```
+
+**Optional (email + security overrides):**
+```bash
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=you@example.com
+EMAIL_HOST_PASSWORD=app-password
+DEFAULT_FROM_EMAIL="TEDx Finance Hub <noreply@yourdomain.com>"
+DJANGO_SECURE_SSL_REDIRECT=True
+DJANGO_SECURE_HSTS_SECONDS=31536000
+DJANGO_SESSION_COOKIE_SAMESITE=Lax
+DJANGO_CSRF_COOKIE_SAMESITE=Lax
 ```
 
 ---
@@ -110,6 +128,7 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://your-app.vercel.app
 - ✅ `build.sh` - Build script
 - ✅ `requirements.txt` - Production dependencies
 - ✅ `.env.example` - Environment template
+- ✅ `.env.production.example` - Production-ready environment template
 
 ### ✅ Documentation
 - ✅ README.md - Comprehensive guide
@@ -130,7 +149,7 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://your-app.vercel.app
 
 2. **Create `.env` file** (don't commit this!)
    ```bash
-   cp .env.example .env
+   cp .env.production.example .env
    # Edit .env with your production values
    ```
 
@@ -140,15 +159,22 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://your-app.vercel.app
    python manage.py collectstatic
    python manage.py check --deploy
    ```
+   - Static files: `collectstatic` outputs to `staticfiles/` and are served by WhiteNoise.
+   - Media uploads: stored under `media/`; on Vercel these are ephemeral—use external storage (e.g., S3/Cloudinary/Azure Blob) for real production uploads.
 
-4. **Initialize Git repository**
+4. **Run tests**
+   ```bash
+   python manage.py test
+   ```
+
+5. **Initialize Git repository**
    ```bash
    git init
    git add .
    git commit -m "Initial commit: TEDx Finance Hub"
    ```
 
-5. **Create GitHub repository**
+6. **Create GitHub repository**
    - Go to github.com/new
    - Create repository: `tedx-finance-hub`
    - Push code:
@@ -177,6 +203,16 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://your-app.vercel.app
    DJANGO_ALLOWED_HOSTS=.vercel.app
    DJANGO_CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app
    DATABASE_URL=<postgres-url-if-using>
+   DJANGO_SECURE_SSL_REDIRECT=True
+   DJANGO_SECURE_HSTS_SECONDS=31536000
+   DJANGO_SESSION_COOKIE_SAMESITE=Lax
+   DJANGO_CSRF_COOKIE_SAMESITE=Lax
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_USE_TLS=True
+   EMAIL_HOST_USER=you@example.com
+   EMAIL_HOST_PASSWORD=app-password
+   DEFAULT_FROM_EMAIL="TEDx Finance Hub <noreply@yourdomain.com>"
    ```
 
 3. **Deploy**
