@@ -4,13 +4,20 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import HttpResponse, JsonResponse
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
 
 from .models import ManagementFund, Sponsor, Transaction, Category
-from .forms import TransactionForm, ManagementFundForm, SponsorForm
+from .forms import (
+    TransactionForm,
+    ManagementFundForm,
+    SponsorForm,
+    validate_file_extension,
+    validate_file_size,
+)
 
 import openpyxl
 
@@ -1033,6 +1040,8 @@ def add_transaction(request):
             transaction.save()
             messages.success(request, 'Transaction submitted for approval!')
             return redirect('tedx_finance:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the transaction.')
     else:
         form = TransactionForm(request.user)
     context = {
@@ -1086,6 +1095,8 @@ def edit_transaction(request, pk):
             form.save()
             messages.success(request, 'Transaction updated successfully.')
             return redirect('tedx_finance:transactions_table')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the transaction.')
     else:
         form = TransactionForm(request.user, instance=tx)
     return render(request, 'tedx_finance/add_transaction.html', {
@@ -1202,6 +1213,8 @@ def add_management_fund(request):
             
             messages.success(request, 'Management fund updated!')
             return redirect('tedx_finance:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the fund details.')
     else:
         form = ManagementFundForm()
     context = {'form': form, 'form_title': 'Add Management Fund', 'form_button': 'Save Fund'}
@@ -1231,6 +1244,8 @@ def edit_management_fund(request, pk):
             
             messages.success(request, 'Management fund updated successfully.')
             return redirect('tedx_finance:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the fund details.')
     else:
         form = ManagementFundForm(instance=fund)
     return render(request, 'tedx_finance/add_management_fund.html', {
@@ -1271,6 +1286,8 @@ def add_sponsor(request):
             form.save()
             messages.success(request, 'New sponsor added successfully!')
             return redirect('tedx_finance:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the sponsor details.')
     else:
         form = SponsorForm()
     context = {'form': form, 'form_title': 'Add New Sponsor', 'form_button': 'Save Sponsor'}
@@ -1286,6 +1303,8 @@ def edit_sponsor(request, pk):
             form.save()
             messages.success(request, 'Sponsor updated successfully.')
             return redirect('tedx_finance:dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below and resubmit the sponsor details.')
     else:
         form = SponsorForm(instance=sponsor)
     return render(request, 'tedx_finance/add_sponsor.html', {
@@ -1854,13 +1873,25 @@ def bulk_upload_proofs(request):
         
         success_count = 0
         error_count = 0
+        error_details = []
         
         # Handle mapping of files to transactions
         for i, file in enumerate(files):
             try:
+                # Validate each file before attaching
+                validate_file_size(file)
+                validate_file_extension(file)
+            except ValidationError as ve:
+                error_count += 1
+                detail = ve.messages[0] if hasattr(ve, 'messages') and ve.messages else 'Invalid file'
+                error_details.append(f"{file.name}: {detail}")
+                continue
+            try:
                 # If transaction IDs provided, map files to transactions
                 if transaction_ids and i < len(transaction_ids):
                     tx_id = transaction_ids[i]
+                    if not tx_id:
+                        raise Transaction.DoesNotExist
                     tx = Transaction.objects.get(id=tx_id, approved=False)
                     tx.proof = file
                     tx.save()
@@ -1893,15 +1924,19 @@ def bulk_upload_proofs(request):
                         
             except Transaction.DoesNotExist:
                 error_count += 1
+                error_details.append(f"{file.name}: Transaction not found or not pending")
                 logger.error(f"Transaction not found for file {file.name}")
             except Exception as e:
                 error_count += 1
+                error_details.append(f"{file.name}: {str(e)}")
                 logger.error(f"Error uploading proof: {str(e)}")
         
         if success_count > 0:
             messages.success(request, f'Successfully uploaded {success_count} proof(s).')
         if error_count > 0:
-            messages.warning(request, f'{error_count} file(s) could not be processed.')
+            preview = '; '.join(error_details[:3]) if error_details else ''
+            more = f" (+{error_count - len(error_details[:3])} more)" if error_count > len(error_details[:3]) else ''
+            messages.warning(request, f'{error_count} file(s) could not be processed. {preview}{more}')
         
         return redirect('tedx_finance:proof_gallery')
     

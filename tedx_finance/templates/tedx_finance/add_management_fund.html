@@ -19,6 +19,21 @@
 
     <form method="post" class="space-y-6" aria-label="Management fund entry form">
             {% csrf_token %}
+            {% if form.errors %}
+            <div class="rounded-lg border border-red-700 bg-red-900/50 text-red-100 p-4" role="alert" aria-live="assertive">
+                <p class="font-semibold">Please fix the highlighted fields.</p>
+                <ul class="mt-2 text-sm space-y-1 list-disc list-inside">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><span class="font-semibold">{{ field.label }}:</span> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             
             <!-- Amount -->
             <div>

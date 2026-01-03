@@ -2,6 +2,7 @@ import os
 from datetime import date
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from .models import Transaction, ManagementFund, Sponsor, Category
 
 # --------------------------------------------------
@@ -327,8 +328,11 @@ class SponsorForm(forms.ModelForm):
     def clean_contact_email(self):
         """Validate and normalize email address."""
         email = self.cleaned_data.get("contact_email", "").strip().lower()
-        if email and '@' not in email:
-            raise ValidationError("Please enter a valid email address.")
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                raise ValidationError("Please enter a valid email address.")
         return email
 
     def clean_agreement(self):
