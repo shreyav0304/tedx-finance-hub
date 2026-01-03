@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
     <title>{% block title %}TEDx Finance Hub{% endblock %}</title>
     
     <!-- Tailwind CSS -->
@@ -1032,6 +1032,148 @@
                 width: 100% !important;
                 height: auto !important;
                 aspect-ratio: 16 / 9;
+            }
+            
+            /* ========== MOBILE RESPONSIVENESS ENHANCEMENTS ========== */
+            
+            /* Mobile-first touch targets (minimum 44x44px) */
+            @media (max-width: 768px) {
+                button, a.btn, input[type="submit"], input[type="checkbox"], input[type="radio"] {
+                    min-height: 44px;
+                    min-width: 44px;
+                }
+                
+                /* Improve tap targets for action buttons */
+                button svg, a svg {
+                    pointer-events: none;
+                }
+                
+                /* Better spacing for mobile cards */
+                .section-card {
+                    padding: 1rem !important;
+                }
+                
+                /* Optimize mobile metrics display */
+                .metric-card {
+                    padding: 1.25rem !important;
+                }
+                
+                /* Mobile-friendly table scrolling hint */
+                .overflow-x-auto::after {
+                    content: '← Swipe to scroll →';
+                    display: block;
+                    text-align: center;
+                    color: #94A3B8;
+                    font-size: 0.75rem;
+                    padding: 0.5rem;
+                    margin-top: 0.5rem;
+                    opacity: 0.7;
+                }
+                
+                /* Improve mobile form inputs */
+                input[type="text"],
+                input[type="number"],
+                input[type="email"],
+                input[type="password"],
+                input[type="date"],
+                select,
+                textarea {
+                    font-size: 16px !important; /* Prevents iOS zoom on focus */
+                    padding: 0.75rem !important;
+                }
+                
+                /* Mobile navigation improvements */
+                nav {
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                }
+                
+                /* Better mobile spacing */
+                .container, .max-w-7xl, .max-w-6xl, .max-w-4xl {
+                    padding-left: 1rem !important;
+                    padding-right: 1rem !important;
+                }
+                
+                /* Prevent horizontal scroll */
+                body {
+                    overflow-x: hidden;
+                }
+                
+                /* Mobile-optimized modals */
+                .modal {
+                    margin: 0.5rem;
+                    max-height: calc(100vh - 1rem);
+                }
+            }
+            
+            /* Tablet-specific optimizations */
+            @media (min-width: 768px) and (max-width: 1024px) {
+                .section-card {
+                    padding: 1.5rem !important;
+                }
+                
+                /* Better chart sizing for tablets */
+                .chart-container {
+                    height: 350px !important;
+                }
+            }
+            
+            /* Touch device optimizations */
+            @media (hover: none) and (pointer: coarse) {
+                /* Remove hover effects on touch devices */
+                .hover\:scale-105:hover {
+                    transform: scale(1);
+                }
+                
+                /* Add active states for touch feedback */
+                button:active, .btn:active, a:active {
+                    transform: scale(0.98);
+                    transition: transform 0.1s ease;
+                }
+                
+                /* Larger click areas for touch */
+                .nav-link {
+                    padding: 0.75rem 1rem !important;
+                }
+            }
+            
+            /* Landscape mobile optimization */
+            @media (max-width: 768px) and (orientation: landscape) {
+                /* Reduce vertical padding in landscape */
+                .section-card {
+                    padding-top: 0.75rem !important;
+                    padding-bottom: 0.75rem !important;
+                }
+                
+                nav {
+                    padding-top: 0.5rem;
+                    padding-bottom: 0.5rem;
+                }
+            }
+            
+            /* Safe area insets for notched devices */
+            @supports (padding: max(0px)) {
+                body {
+                    padding-left: max(0px, env(safe-area-inset-left));
+                    padding-right: max(0px, env(safe-area-inset-right));
+                }
+                
+                nav {
+                    padding-left: max(1rem, env(safe-area-inset-left));
+                    padding-right: max(1rem, env(safe-area-inset-right));
+                }
+            }
+            
+            /* Accessibility improvements for mobile */
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
             }
     </style>
 </head>
