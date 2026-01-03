@@ -28,6 +28,7 @@ urlpatterns = [
     path('categories/quick-add', views.quick_add_category, name='quick_add_category'),
     path('categories/quick-rename', views.quick_rename_category, name='quick_rename_category'),
     path('proofs/', views.proof_gallery, name='proof_gallery'),
+    path('proofs/bulk-upload/', views.bulk_upload_proofs, name='bulk_upload_proofs'),
 
     # Income forms
     path('add-fund/', views.add_management_fund, name='add_management_fund'),

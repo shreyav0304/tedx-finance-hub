@@ -1786,6 +1786,7 @@ def proof_gallery(request):
     user_is_treasurer = is_in_group(request.user, 'Treasurer')
     
     # Parse optional filters
+    search_query = request.GET.get('search', '').strip()
     category_filter = request.GET.get('category', '')
     start_date_str = request.GET.get('start_date', '')
     end_date_str = request.GET.get('end_date', '')
@@ -1796,6 +1797,11 @@ def proof_gallery(request):
     # Query transactions with proofs
     transactions = Transaction.objects.filter(approved=True, proof__isnull=False).exclude(proof='')
     
+    if search_query:
+        transactions = transactions.filter(
+            Q(title__icontains=search_query) | 
+            Q(created_by__username__icontains=search_query)
+        )
     if category_filter:
         transactions = transactions.filter(category=category_filter)
     if start_date:
@@ -1821,6 +1827,7 @@ def proof_gallery(request):
     context = {
         'transactions': transactions,
         'categories': categories,
+        'search_query': search_query,
         'category_filter': category_filter,
         'start_date': start_date_str,
         'end_date': end_date_str,
@@ -1828,6 +1835,85 @@ def proof_gallery(request):
         'is_treasurer': user_is_treasurer,
     }
     return render(request, 'tedx_finance/proof_gallery.html', context)
+
+
+@login_required
+@permission_required('tedx_finance.change_transaction', raise_exception=True)
+def bulk_upload_proofs(request):
+    """
+    Bulk upload proofs for multiple transactions.
+    Allows treasurers to upload multiple proof files at once.
+    """
+    if request.method == 'POST':
+        files = request.FILES.getlist('proof_files')
+        transaction_ids = request.POST.getlist('transaction_ids')
+        
+        if not files:
+            messages.error(request, 'No files uploaded.')
+            return redirect('tedx_finance:proof_gallery')
+        
+        success_count = 0
+        error_count = 0
+        
+        # Handle mapping of files to transactions
+        for i, file in enumerate(files):
+            try:
+                # If transaction IDs provided, map files to transactions
+                if transaction_ids and i < len(transaction_ids):
+                    tx_id = transaction_ids[i]
+                    tx = Transaction.objects.get(id=tx_id, approved=False)
+                    tx.proof = file
+                    tx.save()
+                    success_count += 1
+                    
+                    # Create notification
+                    from .utils import create_notification
+                    if tx.created_by:
+                        create_notification(
+                            tx.created_by,
+                            'transaction_approved',
+                            'Proof Uploaded',
+                            f"Proof has been uploaded for your transaction '{tx.title}'.",
+                            'Transaction',
+                            tx.id
+                        )
+                else:
+                    # Auto-match by filename pattern (e.g., "transaction_123_proof.pdf")
+                    import re
+                    match = re.search(r'transaction[_-](\d+)', file.name, re.IGNORECASE)
+                    if match:
+                        tx_id = match.group(1)
+                        tx = Transaction.objects.get(id=tx_id)
+                        tx.proof = file
+                        tx.save()
+                        success_count += 1
+                    else:
+                        error_count += 1
+                        logger.warning(f"Could not match file {file.name} to any transaction")
+                        
+            except Transaction.DoesNotExist:
+                error_count += 1
+                logger.error(f"Transaction not found for file {file.name}")
+            except Exception as e:
+                error_count += 1
+                logger.error(f"Error uploading proof: {str(e)}")
+        
+        if success_count > 0:
+            messages.success(request, f'Successfully uploaded {success_count} proof(s).')
+        if error_count > 0:
+            messages.warning(request, f'{error_count} file(s) could not be processed.')
+        
+        return redirect('tedx_finance:proof_gallery')
+    
+    # GET: Show upload form with pending transactions
+    pending_transactions = Transaction.objects.filter(
+        approved=False
+    ).order_by('-date')[:50]  # Limit to recent 50
+    
+    context = {
+        'pending_transactions': pending_transactions,
+    }
+    return render(request, 'tedx_finance/bulk_upload_proofs.html', context)
 
 
 @login_required
