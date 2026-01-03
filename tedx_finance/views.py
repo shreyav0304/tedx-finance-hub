@@ -593,6 +593,53 @@ def dashboard(request):
         spending_months = [item['month'].strftime('%b %Y') for item in monthly_spending]
         spending_amounts = [abs(float(item['total'])) for item in monthly_spending]
 
+        # Budget vs Actual Analysis
+        from .models import Budget
+        budgets = Budget.objects.all().order_by('category__name')
+        
+        budget_comparison = []
+        total_budget_amount = 0
+        total_budget_spent = 0
+        budget_exceeded_count = 0
+        budget_warning_count = 0
+        
+        for budget in budgets:
+            spent = budget.spent()
+            remaining = budget.remaining()
+            utilization = budget.utilization_percent()
+            
+            # Categorize budget status
+            if budget.is_exceeded():
+                status = 'exceeded'
+                budget_exceeded_count += 1
+            elif utilization >= 80:
+                status = 'warning'
+                budget_warning_count += 1
+            else:
+                status = 'healthy'
+            
+            budget_comparison.append({
+                'category': budget.category.name,
+                'budget_amount': float(budget.amount),
+                'spent': spent,
+                'remaining': remaining,
+                'utilization': utilization,
+                'status': status,
+                'start_date': budget.start_date,
+                'end_date': budget.end_date,
+            })
+            
+            total_budget_amount += float(budget.amount)
+            total_budget_spent += spent
+        
+        # Overall budget health
+        overall_budget_utilization = (total_budget_spent / total_budget_amount * 100) if total_budget_amount > 0 else 0
+        
+        # Prepare data for budget vs actual chart
+        budget_categories = [item['category'] for item in budget_comparison]
+        budget_amounts = [item['budget_amount'] for item in budget_comparison]
+        actual_amounts = [item['spent'] for item in budget_comparison]
+
         context = {
             'user': request.user,
             'total_funds': total_funds,
@@ -610,6 +657,17 @@ def dashboard(request):
             'sponsors_with_tiers': sponsors_with_tiers,
             'management_funds_list': mf_qs.order_by('-date_received'),
             'sponsors_list': sp_qs.order_by('-date_received'),
+            # Budget tracking data
+            'budget_comparison': budget_comparison,
+            'budget_categories': budget_categories,
+            'budget_amounts': budget_amounts,
+            'actual_amounts': actual_amounts,
+            'total_budget_amount': total_budget_amount,
+            'total_budget_spent': total_budget_spent,
+            'overall_budget_utilization': overall_budget_utilization,
+            'budget_exceeded_count': budget_exceeded_count,
+            'budget_warning_count': budget_warning_count,
+            'has_budgets': budgets.exists(),
         }
     except Exception as e:
         context['error'] = f"An unexpected error occurred: {e}"

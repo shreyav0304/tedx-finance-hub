@@ -13,6 +13,55 @@
 </div>
 
 {% else %}
+<!-- Budget Alerts -->
+{% if has_budgets %}
+    {% if budget_exceeded_count > 0 or budget_warning_count > 0 %}
+    <div class="mb-6 slide-in-down">
+        {% if budget_exceeded_count > 0 %}
+        <div class="bg-red-900/50 border-l-4 border-red-500 p-4 rounded-lg backdrop-blur-sm mb-3" role="alert">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div class="flex-1">
+                    <h4 class="text-red-200 font-bold text-lg mb-1">⚠️ Budget Exceeded Alert</h4>
+                    <p class="text-red-100">
+                        {{ budget_exceeded_count }} categor{{ budget_exceeded_count|pluralize:"y,ies" }} 
+                        {{ budget_exceeded_count|pluralize:"has,have" }} exceeded {{ budget_exceeded_count|pluralize:"its,their" }} budget. 
+                        Immediate attention required.
+                    </p>
+                    <a href="{% url 'tedx_finance:budgets' %}" class="text-red-300 hover:text-red-100 font-semibold text-sm mt-2 inline-block underline">
+                        View Budget Details →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if budget_warning_count > 0 %}
+        <div class="bg-yellow-900/50 border-l-4 border-yellow-500 p-4 rounded-lg backdrop-blur-sm" role="alert">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="flex-1">
+                    <h4 class="text-yellow-200 font-bold text-lg mb-1">⚠ Budget Warning</h4>
+                    <p class="text-yellow-100">
+                        {{ budget_warning_count }} categor{{ budget_warning_count|pluralize:"y,ies" }} 
+                        {{ budget_warning_count|pluralize:"has,have" }} used 80% or more of {{ budget_warning_count|pluralize:"its,their" }} budget. 
+                        Monitor spending closely.
+                    </p>
+                    <a href="{% url 'tedx_finance:budgets' %}" class="text-yellow-300 hover:text-yellow-100 font-semibold text-sm mt-2 inline-block underline">
+                        View Budget Details →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+{% endif %}
+
 <!-- HEADER -->
 <header class="mb-8">
     <!-- Title Section with Quick Stats -->
@@ -546,6 +595,93 @@
                 </div>
                 <div class="h-80"><canvas id="spendingTrendChart" aria-label="Spending over time"></canvas></div>
             </div>
+            
+            <!-- Budget vs Actual -->
+            {% if has_budgets %}
+            <div class="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700 p-6 backdrop-blur-sm hover:border-slate-600 transition-all">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-amber-500/20 p-3 rounded-xl">
+                            <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Budget vs Actual Spending</h3>
+                            <p class="text-sm text-slate-400">Category-wise budget tracking</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'tedx_finance:budgets' %}" class="text-amber-400 hover:text-amber-300 text-sm font-medium underline">View All Budgets →</a>
+                </div>
+                
+                <!-- Budget Health Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <div class="text-slate-400 text-xs font-semibold uppercase mb-1">Total Budget</div>
+                        <div class="text-white text-2xl font-bold">₹{{ total_budget_amount|floatformat:0 }}</div>
+                    </div>
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <div class="text-slate-400 text-xs font-semibold uppercase mb-1">Total Spent</div>
+                        <div class="text-white text-2xl font-bold">₹{{ total_budget_spent|floatformat:0 }}</div>
+                        <div class="text-xs mt-1 {% if overall_budget_utilization >= 100 %}text-red-400{% elif overall_budget_utilization >= 80 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                            {{ overall_budget_utilization|floatformat:1 }}% utilized
+                        </div>
+                    </div>
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <div class="text-slate-400 text-xs font-semibold uppercase mb-1">Budget Status</div>
+                        <div class="flex gap-2 mt-2">
+                            {% if budget_exceeded_count > 0 %}
+                            <span class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">{{ budget_exceeded_count }} Exceeded</span>
+                            {% endif %}
+                            {% if budget_warning_count > 0 %}
+                            <span class="bg-yellow-500 text-slate-900 px-2 py-1 rounded text-xs font-bold">{{ budget_warning_count }} Warning</span>
+                            {% endif %}
+                            {% if budget_exceeded_count == 0 and budget_warning_count == 0 %}
+                            <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">✓ All Healthy</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="h-96"><canvas id="budgetComparisonChart" aria-label="Budget vs actual spending comparison"></canvas></div>
+                
+                <!-- Budget Details Table -->
+                <div class="mt-6 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
+                                <th class="text-left py-2">Category</th>
+                                <th class="text-right py-2">Budget</th>
+                                <th class="text-right py-2">Spent</th>
+                                <th class="text-right py-2">Remaining</th>
+                                <th class="text-right py-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in budget_comparison %}
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
+                                <td class="py-3 text-white font-medium">{{ item.category }}</td>
+                                <td class="py-3 text-right text-slate-300">₹{{ item.budget_amount|floatformat:0 }}</td>
+                                <td class="py-3 text-right text-slate-300">₹{{ item.spent|floatformat:0 }}</td>
+                                <td class="py-3 text-right {% if item.remaining >= 0 %}text-green-400{% else %}text-red-400{% endif %} font-bold">
+                                    ₹{{ item.remaining|floatformat:0 }}
+                                </td>
+                                <td class="py-3 text-right">
+                                    {% if item.status == 'exceeded' %}
+                                    <span class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">{{ item.utilization|floatformat:0 }}%</span>
+                                    {% elif item.status == 'warning' %}
+                                    <span class="bg-yellow-500 text-slate-900 px-2 py-1 rounded text-xs font-bold">{{ item.utilization|floatformat:0 }}%</span>
+                                    {% else %}
+                                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">{{ item.utilization|floatformat:0 }}%</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Sidebar: Recent Transactions & Sponsors -->
@@ -796,6 +932,106 @@
                         }
                     }
                 });
+            }
+            
+            // Budget vs Actual Comparison Chart
+            const budgetChartCtx = document.getElementById('budgetComparisonChart');
+            if (budgetChartCtx) {
+                const budgetCategories = {{ budget_categories|safe }};
+                const budgetAmounts = {{ budget_amounts|safe }};
+                const actualAmounts = {{ actual_amounts|safe }};
+                
+                if (budgetCategories && budgetCategories.length > 0) {
+                    new Chart(budgetChartCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: budgetCategories,
+                            datasets: [
+                                {
+                                    label: 'Budget',
+                                    data: budgetAmounts,
+                                    backgroundColor: '#60A5FA',
+                                    borderColor: '#3B82F6',
+                                    borderWidth: 2,
+                                    borderRadius: 6,
+                                },
+                                {
+                                    label: 'Actual Spent',
+                                    data: actualAmounts,
+                                    backgroundColor: actualAmounts.map((val, idx) => 
+                                        val > budgetAmounts[idx] ? '#EF4444' : '#10B981'
+                                    ),
+                                    borderColor: actualAmounts.map((val, idx) => 
+                                        val > budgetAmounts[idx] ? '#DC2626' : '#059669'
+                                    ),
+                                    borderWidth: 2,
+                                    borderRadius: 6,
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        color: '#D1D5DB',
+                                        font: { size: 14, weight: 'bold' },
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'rect'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: '#1E293B',
+                                    titleColor: '#F1F5F9',
+                                    bodyColor: '#F1F5F9',
+                                    borderColor: '#475569',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.dataset.label || '';
+                                            const value = context.parsed.y;
+                                            const percentage = context.datasetIndex === 1 && budgetAmounts[context.dataIndex] > 0
+                                                ? ' (' + (value / budgetAmounts[context.dataIndex] * 100).toFixed(1) + '%)'
+                                                : '';
+                                            return label + ': ₹' + value.toLocaleString() + percentage;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: '#94a3b8',
+                                        callback: function(value) {
+                                            return '₹' + value.toLocaleString();
+                                        }
+                                    },
+                                    grid: { color: '#334155' }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#D1D5DB',
+                                        font: { size: 12 },
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    },
+                                    grid: { display: false }
+                                }
+                            },
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            }
+                        }
+                    });
+                }
             }
     }
 
