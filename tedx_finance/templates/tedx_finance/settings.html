@@ -1,0 +1,136 @@
+{% extends 'tedx_finance/base.html' %}
+{% block title %}Settings - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm text-slate-400">Customize your experience</p>
+            <h1 class="text-3xl font-bold text-white">Settings</h1>
+        </div>
+        <a href="{% url 'tedx_finance:dashboard' %}" class="text-slate-300 hover:text-white text-sm inline-flex items-center gap-2">
+            <span aria-hidden="true">⟵</span> Back to dashboard
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="rounded-lg border border-red-700 bg-red-900/50 text-red-100 p-4" role="alert" aria-live="assertive">
+            <p class="font-semibold">Please fix the highlighted fields.</p>
+            <ul class="mt-2 text-sm space-y-1 list-disc list-inside">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><span class="font-semibold">{{ field.label }}:</span> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <section class="section-card">
+            <header class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <p class="text-sm text-slate-400">Appearance</p>
+                    <h2 class="text-xl font-semibold text-white">Theme</h2>
+                </div>
+                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200">Syncs across sessions</span>
+            </header>
+            <div class="grid md:grid-cols-2 gap-4 items-start">
+                <div class="space-y-2">
+                    <label for="id_theme" class="block text-slate-200 font-semibold">Choose theme</label>
+                    {{ form.theme }}
+                    <p class="text-xs text-slate-400">Auto follows system preference; light/dark overrides.</p>
+                </div>
+                <div class="bg-slate-900/60 rounded-xl border border-slate-700 p-4 flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl">✨</div>
+                    <div>
+                        <p class="text-sm text-slate-200 font-semibold">Live preview</p>
+                        <p class="text-xs text-slate-400">Changing the theme updates immediately and persists.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-card">
+            <header class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <p class="text-sm text-slate-400">Notifications</p>
+                    <h2 class="text-xl font-semibold text-white">Email preferences</h2>
+                </div>
+                <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-200">Stay informed</span>
+            </header>
+            <div class="space-y-3">
+                <label class="flex items-start gap-3">
+                    {{ form.email_notifications }}
+                    <div>
+                        <p class="font-semibold text-slate-200">Email notifications</p>
+                        <p class="text-xs text-slate-400">Account and finance updates.</p>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3">
+                    {{ form.transaction_alerts }}
+                    <div>
+                        <p class="font-semibold text-slate-200">Transaction alerts</p>
+                        <p class="text-xs text-slate-400">Status changes and approvals.</p>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3">
+                    {{ form.weekly_digest }}
+                    <div>
+                        <p class="font-semibold text-slate-200">Weekly digest</p>
+                        <p class="text-xs text-slate-400">Summary of spending and budgets.</p>
+                    </div>
+                </label>
+                <label class="flex items-start gap-3">
+                    {{ form.marketing_opt_in }}
+                    <div>
+                        <p class="font-semibold text-slate-200">Product updates</p>
+                        <p class="text-xs text-slate-400">Occasional product news (low volume).</p>
+                    </div>
+                </label>
+            </div>
+        </section>
+
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'tedx_finance:dashboard' %}" class="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600">Cancel</a>
+            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">Save settings</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function(){
+    const themeSelect = document.getElementById('id_theme');
+    if (!themeSelect) return;
+
+    function applyTheme(value){
+        const html = document.documentElement;
+        const theme = value || 'dark';
+        if (theme === 'light') {
+            html.classList.add('light-theme');
+        } else if (theme === 'dark') {
+            html.classList.remove('light-theme');
+        } else if (theme === 'auto') {
+            const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+            if (prefersLight) {
+                html.classList.add('light-theme');
+            } else {
+                html.classList.remove('light-theme');
+            }
+        }
+        localStorage.setItem('theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme);
+        updateNavColors(theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme);
+    }
+
+    themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+
+    // Apply current selection on load
+    applyTheme(themeSelect.value);
+})();
+</script>
+{% endblock %}

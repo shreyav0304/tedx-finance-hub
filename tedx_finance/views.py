@@ -10,11 +10,12 @@ from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
 
-from .models import ManagementFund, Sponsor, Transaction, Category
+from .models import ManagementFund, Sponsor, Transaction, Category, UserPreference
 from .forms import (
     TransactionForm,
     ManagementFundForm,
     SponsorForm,
+    UserPreferenceForm,
     validate_file_extension,
     validate_file_size,
 )
@@ -2203,6 +2204,37 @@ def export_proofs_to_pdf(request):
     # Build PDF
     doc.build(elements)
     return response
+
+
+# ============================================================================
+# SETTINGS
+# ============================================================================
+
+
+@login_required
+def settings_view(request):
+    """User settings for theme and notification preferences."""
+    prefs, _ = UserPreference.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        form = UserPreferenceForm(request.POST, instance=prefs)
+        if form.is_valid():
+            prefs = form.save()
+            # Persist theme for subsequent requests and JS bootstrap
+            request.session['theme_pref'] = prefs.theme
+            response = redirect('tedx_finance:settings')
+            response.set_cookie('theme', prefs.theme, max_age=60 * 60 * 24 * 365, samesite='Lax')
+            messages.success(request, 'Settings saved successfully.')
+            return response
+        messages.error(request, 'Please fix the errors below and save again.')
+    else:
+        form = UserPreferenceForm(instance=prefs)
+
+    context = {
+        'form': form,
+        'preferences': prefs,
+        'current_theme': prefs.theme,
+    }
+    return render(request, 'tedx_finance/settings.html', context)
 
 
 # ============================================================================

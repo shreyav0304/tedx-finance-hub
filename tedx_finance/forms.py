@@ -3,7 +3,7 @@ from datetime import date
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from .models import Transaction, ManagementFund, Sponsor, Category
+from .models import Transaction, ManagementFund, Sponsor, Category, UserPreference
 
 # --------------------------------------------------
 # Reusable Helper Functions for File Validation
@@ -342,4 +342,37 @@ class SponsorForm(forms.ModelForm):
             validate_file_size(agreement_file)
             validate_file_extension(agreement_file)
         return agreement_file
+
+
+class UserPreferenceForm(forms.ModelForm):
+    """Form for updating user-level preferences and notification settings."""
+
+    class Meta:
+        model = UserPreference
+        fields = [
+            'theme',
+            'email_notifications',
+            'transaction_alerts',
+            'weekly_digest',
+            'marketing_opt_in',
+        ]
+        widgets = {
+            'theme': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition'
+            }),
+        }
+        labels = {
+            'theme': 'Theme preference',
+            'email_notifications': 'Email notifications',
+            'transaction_alerts': 'Transaction alerts',
+            'weekly_digest': 'Weekly digest',
+            'marketing_opt_in': 'Product updates',
+        }
+        help_texts = {
+            'theme': 'Choose how the app should appear across sessions.',
+            'email_notifications': 'Receive emails for important account or finance updates.',
+            'transaction_alerts': 'Alerts when your transactions change status.',
+            'weekly_digest': 'A weekly summary of spending and budgets.',
+            'marketing_opt_in': 'Occasional product news (low volume).',
+        }
 

@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-user-theme="{{ user_theme|default:'' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
@@ -1226,6 +1226,11 @@
                            data-nav-link>
                             📸 Proofs
                         </a>
+                        <a href="{% url 'tedx_finance:settings' %}"
+                           class="nav-link nav-menu-item px-4 py-2 rounded-lg hover:bg-slate-700"
+                           data-nav-link>
+                            ⚙️ Settings
+                        </a>
                         
                         <!-- Notifications Bell -->
                         <a href="{% url 'tedx_finance:notifications_list' %}" 
@@ -1260,6 +1265,10 @@
                                     ⚙️ Admin Panel
                                 </a>
                                 {% endif %}
+
+                                <a href="{% url 'tedx_finance:settings' %}" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700" data-dropdown-link role="menuitem" aria-label="Settings">
+                                    🛠️ Settings
+                                </a>
                                 
                                 <button onclick="toggleTheme()" class="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700" data-dropdown-link role="menuitem" aria-label="Toggle theme">
                                     🌓 Toggle Theme
@@ -1343,6 +1352,12 @@
                                   data-mobile-link
                                   role="menuitem">
                         📸 Proofs
+                    </a>
+                              <a href="{% url 'tedx_finance:settings' %}" 
+                                  class="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded-lg" 
+                                  data-mobile-link
+                                  role="menuitem">
+                        ⚙️ Settings
                     </a>
                     <hr class="border-slate-700 my-2">
                     {% if is_treasurer %}
@@ -1480,19 +1495,30 @@
 
         // Load saved theme on page load
         (function() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            if (savedTheme === 'light') {
-                document.documentElement.classList.add('light-theme');
+            const html = document.documentElement;
+            const serverTheme = html.dataset.userTheme || '';
+            const storedTheme = localStorage.getItem('theme');
+            const activeTheme = storedTheme || serverTheme || 'dark';
+
+            // Keep localStorage in sync with server preference when provided
+            if (serverTheme && serverTheme !== storedTheme) {
+                localStorage.setItem('theme', serverTheme);
+            }
+
+            if (activeTheme === 'light') {
+                html.classList.add('light-theme');
+            } else {
+                html.classList.remove('light-theme');
             }
             
             // Run immediately AND after DOM loads for reliability
-            updateNavColors(savedTheme);
+            updateNavColors(activeTheme);
             
             document.addEventListener('DOMContentLoaded', function() {
-                updateNavColors(savedTheme);
+                updateNavColors(activeTheme);
                 
                 // Run again after a short delay to ensure all elements are ready
-                setTimeout(() => updateNavColors(savedTheme), 100);
+                setTimeout(() => updateNavColors(activeTheme), 100);
             });
         })();
 

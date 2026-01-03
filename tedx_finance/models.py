@@ -63,6 +63,32 @@ class Transaction(models.Model):
         return self.title
 
 
+class UserPreference(models.Model):
+    """Per-user preferences for theme and communications."""
+
+    THEME_CHOICES = [
+        ('dark', 'Dark'),
+        ('light', 'Light'),
+        ('auto', 'Auto'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='dark')
+    email_notifications = models.BooleanField(default=True)
+    transaction_alerts = models.BooleanField(default=True)
+    weekly_digest = models.BooleanField(default=False)
+    marketing_opt_in = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'User Preference'
+        verbose_name_plural = 'User Preferences'
+
+    def __str__(self):
+        return f"Preferences for {self.user.username}"
+
+
 class Budget(models.Model):
     """Budget tracking per category with alerts when exceeded."""
     # Link budgets to the dynamic Category model so new/custom categories can have budgets

@@ -10,6 +10,7 @@ urlpatterns = [
 
     # Main dashboard
     path('', views.dashboard, name='dashboard'),
+    path('settings/', views.settings_view, name='settings'),
     path('budgets/', views.budgets, name='budgets'),
     path('budget-suggestions/', views.budget_suggestions, name='budget_suggestions'),
     
