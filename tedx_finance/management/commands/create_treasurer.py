@@ -10,14 +10,14 @@ class Command(BaseCommand):
         parser.add_argument(
             '--username',
             type=str,
-            default='treasurer',
-            help='Username for the treasurer account (default: treasurer)'
+            required=True,
+            help='Username for the treasurer account'
         )
         parser.add_argument(
             '--password',
             type=str,
-            default='Treasurer@123',
-            help='Password for the treasurer account (default: Treasurer@123)'
+            required=True,
+            help='Password for the treasurer account'
         )
         parser.add_argument(
             '--email',
