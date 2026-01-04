@@ -9,6 +9,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.cache import cache
 from django.template.loader import render_to_string
 from django.core.files.storage import default_storage
+from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
 import logging
@@ -174,26 +175,43 @@ def signup(request):
     """User signup with email verification."""
     from .models import EmailVerification
     from .utils import generate_email_token, send_verification_email
+    from django.conf import settings
     
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            # Create user but mark as inactive until email verified
+            # Create user
             user = form.save(commit=False)
-            user.is_active = False  # Deactivate until email verified
+            
+            # In development mode, activate user immediately for testing
+            # In production, require email verification
+            user.is_active = settings.DEBUG
             user.save()
             
             # Create email verification record
             token = generate_email_token()
-            EmailVerification.objects.create(user=user, token=token)
+            verification = EmailVerification.objects.create(user=user, token=token)
+            
+            # In development mode, auto-verify in console
+            if settings.DEBUG:
+                verification.is_verified = True
+                verification.verified_at = timezone.now()
+                verification.save()
             
             # Send verification email
             if send_verification_email(user, token, request):
-                messages.success(
-                    request,
-                    'Account created! Please check your email to verify your account. '
-                    'Verification link expires in 24 hours.'
-                )
+                if settings.DEBUG:
+                    messages.success(
+                        request,
+                        'Account created! (Dev Mode: Auto-activated for testing) '
+                        'You can now log in immediately.'
+                    )
+                else:
+                    messages.success(
+                        request,
+                        'Account created! Please check your email to verify your account. '
+                        'Verification link expires in 24 hours.'
+                    )
                 return redirect('login')
             else:
                 # If email fails, delete the user and show error
@@ -239,6 +257,7 @@ def verify_email(request, token):
 def login_view(request):
     """Login view with rate limiting."""
     from django.contrib.auth import authenticate, login as auth_login
+    from django.conf import settings
     from .models import LoginAttempt
     from .utils import get_client_ip, send_login_notification_email
     
@@ -267,10 +286,11 @@ def login_view(request):
             # Successful login
             LoginAttempt.log_attempt(username, ip_address, success=True)
             
-            # Check if email is verified
-            if hasattr(user, 'email_verification') and not user.email_verification.is_verified:
-                messages.warning(request, 'Please verify your email before logging in.')
-                return redirect('login')
+            # Check if email is verified (skip in development mode for testing)
+            if not settings.DEBUG:
+                if hasattr(user, 'email_verification') and not user.email_verification.is_verified:
+                    messages.warning(request, 'Please verify your email before logging in.')
+                    return redirect('login')
             
             auth_login(request, user)
             

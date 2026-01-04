@@ -135,20 +135,21 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 # Email Configuration
-# For development - prints emails to console
-EMAIL_BACKEND = os.getenv(
-    'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend' if DEBUG 
-    else 'django.core.mail.backends.smtp.EmailBackend'
-)
+# Use console backend in development if EMAIL_ENABLE_SMTP not set
+# For production, set EMAIL_ENABLE_SMTP=true and configure SMTP credentials
+USE_SMTP_EMAIL = env_bool('EMAIL_ENABLE_SMTP', False)
 
-# SMTP Configuration (used in production)
-if not DEBUG:
+if USE_SMTP_EMAIL:
+    # SMTP Configuration (real email sending)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
     EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
     EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
     EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+else:
+    # Console backend - prints emails to console (default for development)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@tedxfinancehub.com')
 
