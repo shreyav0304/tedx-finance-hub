@@ -19,6 +19,11 @@ def generate_email_token():
 def send_verification_email(user, token, request):
     """Send email verification link to user."""
     try:
+        # Skip if user has no email
+        if not user.email:
+            logger.warning(f"User {user.username} has no email address")
+            return True  # Return True to not block signup
+        
         verification_url = request.build_absolute_uri(
             f'/verify-email/{token}/'
         )
@@ -42,13 +47,18 @@ def send_verification_email(user, token, request):
         logger.info(f"Verification email sent to {user.email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        logger.error(f"Failed to send verification email: {str(e)}")
         return False
 
 
 def send_password_reset_email(user, reset_url):
     """Send password reset email to user."""
     try:
+        # Skip if user has no email
+        if not user.email:
+            logger.warning(f"User {user.username} has no email address for password reset")
+            return False
+        
         context = {
             'user': user,
             'reset_url': reset_url,
@@ -67,13 +77,18 @@ def send_password_reset_email(user, reset_url):
         logger.info(f"Password reset email sent to {user.email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        logger.error(f"Failed to send password reset email: {str(e)}")
         return False
 
 
 def send_login_notification_email(user, request):
     """Send login notification email to user with login details."""
     try:
+        # Skip if user has no email
+        if not user.email:
+            logger.warning(f"User {user.username} has no email address for login notification")
+            return True  # Return True to not block login
+        
         ip_address = get_client_ip(request)
         user_agent_string = request.META.get('HTTP_USER_AGENT', 'Unknown')
         
@@ -110,7 +125,7 @@ def send_login_notification_email(user, request):
         logger.info(f"Login notification email sent to {user.email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send login notification email to {user.email}: {str(e)}")
+        logger.error(f"Failed to send login notification email: {str(e)}")
         return False
 
 

@@ -172,9 +172,9 @@ def apply_transaction_filters(request, queryset=None, user_is_treasurer=False):
 
 # --- Authentication ---
 def signup(request):
-    """User signup with email verification."""
+    """User signup - simplified without email verification."""
     from .models import EmailVerification
-    from .utils import generate_email_token, send_verification_email
+    from .utils import generate_email_token
     from django.conf import settings
     
     if request.method == 'POST':
@@ -188,35 +188,26 @@ def signup(request):
             user.is_active = settings.DEBUG
             user.save()
             
-            # Create email verification record
+            # Create email verification record (for future use)
             token = generate_email_token()
             verification = EmailVerification.objects.create(user=user, token=token)
             
-            # In development mode, auto-verify in console
+            # In development mode, auto-verify
             if settings.DEBUG:
                 verification.is_verified = True
                 verification.verified_at = timezone.now()
                 verification.save()
-            
-            # Send verification email
-            if send_verification_email(user, token, request):
-                if settings.DEBUG:
-                    messages.success(
-                        request,
-                        'Account created! (Dev Mode: Auto-activated for testing) '
-                        'You can now log in immediately.'
-                    )
-                else:
-                    messages.success(
-                        request,
-                        'Account created! Please check your email to verify your account. '
-                        'Verification link expires in 24 hours.'
-                    )
-                return redirect('login')
+                messages.success(
+                    request,
+                    'Account created successfully! You can now log in.'
+                )
             else:
-                # If email fails, delete the user and show error
-                user.delete()
-                messages.error(request, 'Failed to send verification email. Please try again.')
+                messages.success(
+                    request,
+                    'Account created! Please check your email to verify your account.'
+                )
+            
+            return redirect('login')
     else:
         form = UserCreationForm()
     
