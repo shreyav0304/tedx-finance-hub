@@ -2276,7 +2276,7 @@ def settings_view(request):
 @login_required
 def notifications_list(request):
     """Display all notifications for the logged-in user with pagination."""
-    from .models_improvements import Notification
+    from .models import Notification
     
     notifications = Notification.objects.filter(user=request.user).select_related('user')
     unread_count = notifications.filter(is_read=False).count()
@@ -2304,7 +2304,7 @@ def notifications_list(request):
 @login_required
 def get_unread_notifications_count(request):
     """API endpoint to get unread notifications count (for real-time updates)."""
-    from .models_improvements import Notification
+    from .models import Notification
     
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({'unread_count': unread_count})
@@ -2313,7 +2313,7 @@ def get_unread_notifications_count(request):
 @login_required
 def mark_notification_read(request, pk):
     """Mark a single notification as read."""
-    from .models_improvements import Notification
+    from .models import Notification
     
     try:
         notification = Notification.objects.get(pk=pk, user=request.user)
@@ -2335,7 +2335,7 @@ def mark_notification_read(request, pk):
 @login_required
 def mark_all_notifications_read(request):
     """Mark all notifications as read for the user."""
-    from .models_improvements import Notification
+    from .models import Notification
     
     if request.method == 'POST':
         unread_notifications = Notification.objects.filter(user=request.user, is_read=False)
