@@ -30,7 +30,7 @@ def send_verification_email(user, token, request):
             'expiration_hours': 24,
         }
         
-        message = render_to_string('tedx_finance/emails/verification_email.html', context)
+        message = render_to_string('emails/verification_email.html', context)
         send_mail(
             subject='Verify your TEDx Finance Hub email',
             message='',
@@ -55,7 +55,7 @@ def send_password_reset_email(user, reset_url):
             'expiration_hours': 24,
         }
         
-        message = render_to_string('tedx_finance/emails/password_reset.html', context)
+        message = render_to_string('emails/password_reset.html', context)
         send_mail(
             subject='Reset your TEDx Finance Hub password',
             message='',
@@ -98,7 +98,7 @@ def send_login_notification_email(user, request):
             'location': 'Unknown',
         }
         
-        message = render_to_string('tedx_finance/emails/login_notification.html', context)
+        message = render_to_string('emails/login_notification.html', context)
         send_mail(
             subject='New Login to Your TEDx Finance Hub Account',
             message='',

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.forms import UserCreationForm
+from .forms import UserCreationForm
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import HttpResponse, JsonResponse
@@ -274,9 +274,11 @@ def login_view(request):
             
             auth_login(request, user)
             
-            # Send login notification email
-            if hasattr(user, 'preferences') and user.preferences.email_notifications:
-                send_login_notification_email(user, request)
+            # NOTE: Login notification emails are disabled by design.
+            # Users will only receive emails on:
+            # 1. Email verification (signup)
+            # 2. Password reset
+            # No transactional emails are sent on regular login.
             
             messages.success(request, f'Welcome back, {user.first_name or username}!')
             return redirect('tedx_finance:dashboard')
